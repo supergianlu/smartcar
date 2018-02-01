@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_map"
+            android:icon="@drawable/ic_map_black"
+            android:title="Mappa" />
+        <item
+            android:id="@+id/nav_arduino"
+            android:icon="@drawable/ic_bluetooth_connected_black"
+            android:title="Collegamento" />
+        <item
+            android:id="@+id/nav_setting"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Impostazioni" />
+    </group>
+
+    <item android:title="Utente">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@drawable/ic_exit_to_app"
+                android:title="Logout" />
+        </menu>
+    </item>
+
+</menu>
