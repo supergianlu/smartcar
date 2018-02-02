@@ -2,22 +2,26 @@ package smartcity.smartcar;
 
 
 import android.Manifest;
-import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Point;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.view.View;
 import android.widget.Toast;
 
-import com.ahmadrosid.lib.drawroutemap.DrawMarker;
-import com.ahmadrosid.lib.drawroutemap.DrawRouteMaps;
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.util.DirectionConverter;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -28,15 +32,23 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.gson.Gson;
 import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import smartcity.smartcar.cluster.MyClusterItem;
+import smartcity.smartcar.cluster.ParkingDialogActivity;
 
 public class MapActivity extends MainActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private LatLng currentLocation;
+    private LatLng carLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +59,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,33 +72,37 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Request permission here
-            //public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults);
+            ActivityCompat.requestPermissions(MapActivity.this,new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             return;
         }
-        mMap.setMyLocationEnabled(true);
+        if(!mMap.isMyLocationEnabled()) mMap.setMyLocationEnabled(true);
 
-        //SET THE CURRENT POSITION
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        final LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-        MarkerOptions carMarker = new MarkerOptions().position(currentLocation)
-                .title("Hai parcheggiato la macchina qui alle 17:00")
-                .snippet("clicca per visualizzare il percorso")
-                .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car)));
-        mMap.addMarker(carMarker);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
-        setAllOldParking();
-        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
-            @Override
-            public void onInfoWindowClick(Marker marker) {
-                if(marker.getPosition().equals(currentLocation)){
-                    Toast.makeText(MapActivity.this, "si", Toast.LENGTH_SHORT).show();
-                    setRoute(currentLocation, currentLocation/*carLocation*/);
-                }
-            }
-        });
+        LocationServices.getFusedLocationProviderClient(this).getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            carLocation = new LatLng(currentLocation.latitude, currentLocation.longitude+0.01);
+                            mMap.addMarker(new MarkerOptions().position(carLocation)
+                                    .title("Hai parcheggiato la macchina qui alle 17:00")
+                                    .snippet("clicca per visualizzare il percorso")
+                                    .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
+
+                            setAllOldParking();
+                            mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+                                @Override
+                                public void onInfoWindowClick(Marker marker) {
+                                    if(marker.getPosition().equals(carLocation)){
+                                        setRoute(currentLocation, carLocation);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
     }
 
     private BitmapDescriptor getMarkerIconFromDrawable(Drawable drawable) {
@@ -103,7 +119,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         mMap.setOnCameraIdleListener(clusterManager);
         mMap.setOnMarkerClickListener(clusterManager);
 
-        //TODO get all parking from DB
+        //TODO get all parking from DB (in AsyncTask)
         double lat = 44.063900;
         double lng = 12.585375;
         // Add ten cluster items in close proximity, for purposes of this example.
@@ -111,31 +127,52 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
             double offset = i / 60d;
             lat = lat + offset;
             lng = lng + offset;
-            MyClusterItem offsetItem = new MyClusterItem(lat, lng, "ciao", "bell");
+            MyClusterItem offsetItem = new MyClusterItem(lat, lng, "Hai parcheggiato qui il 02/02/95", "\""+lat+"\", \""+lng+"\"");
             clusterManager.addItem(offsetItem);
         }
         clusterManager.setOnClusterClickListener(new ClusterManager.OnClusterClickListener<ClusterItem>() {
             @Override
             public boolean onClusterClick(Cluster<ClusterItem> cluster) {
-                Toast.makeText(MapActivity.this, "Hai parcheggiato qua "+cluster.getSize()+ " volte", Toast.LENGTH_SHORT).show();
+                Gson gson = new Gson();
+                String clusteCollection = gson.toJson(cluster.getItems());
+                Intent intent = new Intent(MapActivity.this, ParkingDialogActivity.class);
+                intent.putExtra("clusterCollection", clusteCollection);
+                startActivity(intent);
                 return true;
             }
         });
     }
 
     private void setRoute(LatLng origin, LatLng destination){
-        destination = new LatLng(origin.latitude, origin.longitude+0.01); // da silenziare
-        DrawRouteMaps.getInstance(this)
-                .draw(origin, destination, mMap);
-        //DrawMarker.getInstance(this).draw(mMap, origin, R.drawable.amu_bubble_mask, "Origin Location");
-        DrawMarker.getInstance(this).draw(mMap, destination, R.drawable.amu_bubble_mask, "Destination Location");
+        GoogleDirection.withServerKey(getString(R.string.google_maps_key_direction))
+                .from(origin)
+                .to(destination)
+                .transitMode(TransportMode.WALKING)
+                .execute(new DirectionCallback() {
+                    @Override
+                    public void onDirectionSuccess(Direction direction, String rawBody) {
+                        Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
+                        if (direction.isOK()) {
+                            Route route = direction.getRouteList().get(0);
+                            ArrayList<LatLng> directionPositionList = route.getLegList().get(0).getDirectionPoint();
+                            mMap.addPolyline(DirectionConverter.createPolyline(MapActivity.this, directionPositionList, 5, Color.parseColor("#2CAAE5")));
+                            setCameraWithCoordinationBounds(route);
+                        } else {
+                            Toast.makeText(MapActivity.this, "Errore nel calcolo del percorso", Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-        LatLngBounds bounds = new LatLngBounds.Builder()
-                .include(origin)
-                .include(destination).build();
-        Point displaySize = new Point();
-        getWindowManager().getDefaultDisplay().getSize(displaySize);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, displaySize.x, 250, 30));
+                    @Override
+                    public void onDirectionFailure(Throwable t) {
+                        Toast.makeText(MapActivity.this, "Errore nel calcolo del percorso", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
+    private void setCameraWithCoordinationBounds(Route route) {
+        LatLng southwest = route.getBound().getSouthwestCoordination().getCoordination();
+        LatLng northeast = route.getBound().getNortheastCoordination().getCoordination();
+        LatLngBounds bounds = new LatLngBounds(southwest, northeast);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+    }
 }
