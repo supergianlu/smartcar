@@ -1,7 +1,6 @@
 package smartcity.smartcar;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -31,8 +30,8 @@ public class MainActivity extends AppCompatActivity
         Intent intent = null;
         if (id == R.id.nav_map) {
             intent = new Intent(this, MapActivity.class);
-        } else if (id == R.id.nav_arduino) {
-
+        } else if (id == R.id.nav_bluetooth) {
+            intent = new Intent(this, BluetoothActivity.class);
         } else if (id == R.id.nav_setting) {
             intent = new Intent(this, SettingActivity.class);
         } else if (id == R.id.nav_logout) {

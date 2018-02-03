@@ -31,6 +31,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="smartcity.smartcar.BluetoothActivity"
+            android:label="Arduino"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:screenOrientation="portrait"/>
+        <activity
             android:name="smartcity.smartcar.SettingActivity"
             android:label="Impostazioni"
             android:theme="@style/AppTheme.NoActionBar"

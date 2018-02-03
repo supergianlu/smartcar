@@ -63,7 +63,9 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                Intent intent = new Intent(MapActivity.this, BluetoothActivity.class);
+                startActivity(intent);
+                finish();
             }
         });
     }
@@ -96,6 +98,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                                 @Override
                                 public void onInfoWindowClick(Marker marker) {
                                     if(marker.getPosition().equals(carLocation)){
+                                        Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
                                         setRoute(currentLocation, carLocation);
                                     }
                                 }
@@ -151,7 +154,6 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                 .execute(new DirectionCallback() {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
-                        Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
                         if (direction.isOK()) {
                             Route route = direction.getRouteList().get(0);
                             ArrayList<LatLng> directionPositionList = route.getLegList().get(0).getDirectionPoint();

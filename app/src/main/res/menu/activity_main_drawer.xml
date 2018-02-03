@@ -7,7 +7,7 @@
             android:icon="@drawable/ic_map_black"
             android:title="Mappa" />
         <item
-            android:id="@+id/nav_arduino"
+            android:id="@+id/nav_bluetooth"
             android:icon="@drawable/ic_bluetooth_connected_black"
             android:title="Collegamento" />
         <item
