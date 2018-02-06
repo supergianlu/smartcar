@@ -11,4 +11,8 @@
     <string name="google_maps_key_direction" templateMergeStrategy="preserve" translatable="false">
         AIzaSyArT04zRfQzZt9PDQe_vELuNW99WkXNA9I
     </string>
+
+
+    <string name="login_url">http://ec2-13-58-204-113.us-east-2.compute.amazonaws.com/mirribilandia/login.php</string>
+    <string name="add_new_user">http://ec2-13-58-204-113.us-east-2.compute.amazonaws.com/mirribilandia/add_user.php</string>
 </resources>

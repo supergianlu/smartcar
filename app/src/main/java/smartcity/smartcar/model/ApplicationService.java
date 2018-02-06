@@ -1,6 +1,8 @@
 package smartcity.smartcar.model;
 
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothDevice;
@@ -9,12 +11,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import smartcity.smartcar.BluetoothActivity;
 import smartcity.smartcar.R;
@@ -22,6 +24,7 @@ import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.model.Event.*;
 import static smartcity.smartcar.model.MyIntentFilter.*;
+import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 
 
 /**
@@ -48,11 +51,9 @@ public class ApplicationService extends IntentService {
     private int actualProbability = -1;
     private long lastUpdateTime;
     private boolean stop;
-    private SharedPreferences prefs;
 
     public ApplicationService() {
         super("ApplicationService");
-        prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
     }
 
     @Override
@@ -101,7 +102,7 @@ public class ApplicationService extends IntentService {
             Log.d("AndroidCar", "Già connesso al dispositivo");
         } else {
             this.stopComputing();
-            final BluetoothDevice device = Helper.getDeviceByAddress(prefs.getString("myDeviceAddress", ""));
+            final BluetoothDevice device = Helper.getDeviceByAddress(address);
             this.connectionHandlerThread = new ConnectionHandlerThread(device, this);
             this.connectionHandlerThread.start();
         }
@@ -127,7 +128,8 @@ public class ApplicationService extends IntentService {
         Log.d("AndroidCar", "Valuto chiusura macchina");
 
         // Probabilità attuale minore di quella minima ---> lancio allarme
-        if(this.actualProbability <= prefs.getInt("myProbability", 40)) {
+        SharedPreferences prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
+        if(this.actualProbability <= prefs.getInt("myProbability", DEFAULT_PROB)) {
             Log.d("AndroidCar", "Non hai chiuso la macchina!");
             this.notifyEvent(CAR_NOT_CLOSED, Integer.toString(this.actualProbability));
             this.sendNotification();
@@ -158,35 +160,43 @@ public class ApplicationService extends IntentService {
     }
 
     private void sendNotification() {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         final Intent i = new Intent(this, BluetoothActivity.class);
         final PendingIntent pi = PendingIntent.getActivity(this, 1, i, 0);
-
-        // Creo la notifca
-        NotificationCompat.Builder notifica = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Mind Your Car")
-                .setContentText("Non hai chiuso la macchina!");
-
-        // Carico il suono di avviso
-        final Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        // Setto i parametri della notifica
-        notifica.setSound(sound);
-        notifica.setAutoCancel(true);
-        notifica.setContentIntent(pi);
-
-        // Lancio la notifica
-        notificationManager.notify(1, notifica.build());
+        Notification.Builder builder;
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            String CHANNEL_ID = "smartcar_channel_id";// The id of the channel.
+            CharSequence name = "smartcar";// The user-visible name of the channel.
+            int notifyID = (int) System.currentTimeMillis();
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            builder = new Notification.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Smart Car")
+                    .setContentText("Non hai chiuso la macchina!")
+                    .setAutoCancel(true)
+                    .setContentIntent(pi)
+                    .setChannelId(CHANNEL_ID);
+            notificationManager.createNotificationChannel(mChannel);
+            notificationManager.notify(notifyID, builder.build());
+        } else {
+            builder = new Notification.Builder(this)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Smart Car")
+                    .setContentText("Non hai chiuso la macchina!")
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+            notificationManager.notify(1, builder.build());
+        }
 
         // Scrivo su file il fatto che ho mandato la notifica
-        /*try {
-            final FileOutputStream outputStream = openFileOutput(Settings.NOTIFICATION_FILENAME, MODE_PRIVATE);
+        try {
+            final FileOutputStream outputStream = openFileOutput(Helper.NOTIFICATION_FILENAME, MODE_PRIVATE);
             outputStream.write(1);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }*/
+        }
     }
 
     private void stopService() {

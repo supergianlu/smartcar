@@ -18,6 +18,8 @@ import java.util.List;
 
 import smartcity.smartcar.utility.Helper;
 
+import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
+
 public class SettingActivity extends MainActivity {
 
     private TextView text;
@@ -123,7 +125,7 @@ public class SettingActivity extends MainActivity {
 
     private void setupSeekBar() {
         final SeekBar seekBarProbabilità = findViewById(R.id.seekBarProbabilità);
-        final int defaultProbabilità = prefs.getInt("myProbability", 40);
+        final int defaultProbabilità = prefs.getInt("myProbability", DEFAULT_PROB);
 
         // Setto la GUI (seekBar e relativo testo che mostra il valore)
         seekBarProbabilità.setProgress(defaultProbabilità / (100 / seekBarProbabilità.getMax()));

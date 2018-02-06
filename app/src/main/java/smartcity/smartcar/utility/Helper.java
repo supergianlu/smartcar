@@ -3,7 +3,10 @@ package smartcity.smartcar.utility;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
+import android.support.v4.app.ActivityCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +22,10 @@ public class Helper {
     public static final int CAR_CLOSED_COLOR = Color.rgb(19, 166, 13);
     // Colore da mostrare nella progressBar quando la macchina non è chiusa
     public static final int CAR_UNCLOSED_COLOR = Color.rgb(217, 0, 0);
+    public static final int DEFAULT_PROB = 40;
+
+    // File dove segnare il fatto che ho inviato la notifica
+    public static final String NOTIFICATION_FILENAME = "notifica.bin";
 
     /**
      * Funzione che trova un device accoppiato a partire dal suo nome.
@@ -115,5 +122,37 @@ public class Helper {
         final List<String> list = new ArrayList<>();
         Collections.addAll(list, "HC-05", "HC-06");
         return Collections.unmodifiableList(list);
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Legge una stringa da uno stream di dati.
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static String readStringFromStream(final InputStream inputStream) throws IOException {
+        int byteRead = 1;
+        byte bytes[] = new byte[1024];
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        while(byteRead > 0) {
+            byteRead = inputStream.read(bytes, 0, bytes.length);
+
+            if(byteRead > 0) {
+                stringBuilder.append(new String(bytes, 0, byteRead));
+            }
+        }
+        return stringBuilder.toString();
     }
 }
