@@ -16,6 +16,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import smartcity.smartcar.utility.Helper;
+
 public class SettingActivity extends MainActivity {
 
     private TextView text;
@@ -47,12 +49,11 @@ public class SettingActivity extends MainActivity {
                 selectionDeviceText.setText("Nessun device accoppiato");
                 this.button.setVisibility(View.INVISIBLE);
             } else {
-                final String defaultDeviceAddress = prefs.getString("myDeviceAddress", "");
+                final String defaultDeviceAddress = Helper.getDefaultDeviceAddress(prefs.getString("myDeviceAddress", ""));
                 // Se la stringa è vuota significa che il device di default non è accoppiato con il telefono
                 if(defaultDeviceAddress.isEmpty()) {
                     button.setText(devices.get(0).getName());
                 } else {
-
                     // Cerco il nome associato all'indirizzo del device di default
                     for(BluetoothDevice device : devices) {
                         if(device.getAddress().equals(defaultDeviceAddress)) {
