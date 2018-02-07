@@ -1,5 +1,0 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" tools:context=".activity.MainActivity">
-    <item android:id="@+id/connectOption" android:title="Connetti " />
-    <item android:id="@+id/disconnectOption" android:title="Disconnetti" />
-</menu>

@@ -59,9 +59,7 @@
             android:theme="@style/DialogTheme"
             android:excludeFromRecents="true"
             android:screenOrientation="portrait"/>
-        <service
-            android:name="smartcity.smartcar.model.ApplicationService"
-            android:exported="false" />
+        <service android:name="smartcity.smartcar.model.ApplicationService"/>
     </application>
 
 </manifest>

@@ -10,7 +10,7 @@ public enum Event {
     CONNECTION_FAILED,
     CAR_CLOSED,
     CAR_NOT_CLOSED,
-    APPLICATION_STOPPED, // Applicazione stoppata dall'utente attraverso il comando "Disconnect" dalla MainActivity
+    DISCONNECT, // Applicazione stoppata dall'utente attraverso il comando "Disconnect" dalla MainActivity
     BLUETOOTH_DISABLED,
     MESSAGE_RECEIVED,
     DEVICE_NOT_FOUND, //Il device cercato non è presente tra i dispositivi accoppiati al telefono

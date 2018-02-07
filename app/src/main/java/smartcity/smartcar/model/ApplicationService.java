@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,6 +13,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -44,7 +47,7 @@ import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
  * N.B : Questi Intent devono essere mandati usando il metodo LocalBroadcastManager.sendBroadcast(intent) in quanto
  *       questo Service utilizza un receiver locale
  */
-public class ApplicationService extends IntentService {
+public class ApplicationService extends Service {
 
     private ConnectionHandlerThread connectionHandlerThread;
     private final MyBroadcastReceiver myBroadcastReceiver = new MyBroadcastReceiver();
@@ -52,8 +55,20 @@ public class ApplicationService extends IntentService {
     private long lastUpdateTime;
     private boolean stop;
 
-    public ApplicationService() {
-        super("ApplicationService");
+    @Override
+    public void onCreate() {
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        //TODO do something useful
+        return Service.START_NOT_STICKY;
     }
 
     @Override
