@@ -55,6 +55,7 @@
             android:layout_margin="16dp"
             android:gravity="center"
             android:text="Connetti"
+            android:enabled="false"
             android:textColor="#FFFFFF" />
 
         <Button
@@ -66,6 +67,7 @@
             android:layout_margin="16dp"
             android:gravity="center"
             android:text="Disconnetti"
+            android:enabled="false"
             android:textColor="#FFFFFF" />
     </LinearLayout>
 

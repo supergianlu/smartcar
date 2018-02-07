@@ -2,6 +2,7 @@ package smartcity.smartcar.activity;
 
 
 import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -48,6 +49,7 @@ import java.util.Locale;
 import smartcity.smartcar.R;
 import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
+import smartcity.smartcar.model.ApplicationService;
 
 public class MapActivity extends MainActivity implements OnMapReadyCallback {
 
@@ -73,6 +75,24 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                 finish();
             }
         });
+
+        if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+            startService();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(final int requestCode, int resultCode, final Intent data) {
+        if(requestCode == 1) {
+            if(resultCode == RESULT_OK) {
+                startService();
+            }
+        }
+    }
+
+    private void startService(){
+        Intent service = new Intent(getApplicationContext(), ApplicationService.class);
+        getApplicationContext().startService(service);
     }
 
     @Override

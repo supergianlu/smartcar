@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -49,50 +50,50 @@ import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
  */
 public class ApplicationService extends Service {
 
+
     private ConnectionHandlerThread connectionHandlerThread;
-    private final MyBroadcastReceiver myBroadcastReceiver = new MyBroadcastReceiver();
     private int actualProbability = -1;
     private long lastUpdateTime;
     private boolean stop;
 
+
+    private final IBinder mBinder = new MyBinder();
+    private String deviceAddress;
+    private int minProbability;
+    private int progress;
+    private String arcText;
+    private Event event;
+
+    public class MyBinder extends Binder {
+        public ApplicationService getService() {
+            return ApplicationService.this;
+        }
+    }
+
     @Override
     public void onCreate() {
+        SharedPreferences prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
+        deviceAddress = prefs.getString("myDeviceAddress", null);
+        if(deviceAddress == null) {
+            stopSelf();
+        } else {
+            minProbability = prefs.getInt("myProbability", 40);
+
+            //TODO QUI O NELL?ON START COMMAND??
+            startApplicationService(deviceAddress);
+        }
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //TODO do something useful
-        return Service.START_NOT_STICKY;
-    }
 
-    @Override
-    protected void onHandleIntent(final Intent intent) {
-        Log.d("AndroidCar", "service partito");
-        this.setupBroadcastReceiver();
-
-        final String address = intent.getStringExtra("address");
-
-        if(address != null && !address.isEmpty()){
-            this.startApplicationService(address);
-        }
-
-        while (!stop) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(this.myBroadcastReceiver);
-        this.stopComputing();
-        stopSelf();
+        return Service.START_STICKY;
     }
 
     public void notifyEvent(Event event, String message) {
@@ -111,7 +112,7 @@ public class ApplicationService extends Service {
         }
     }
 
-    private void startApplicationService(final String address) {
+    public void startApplicationService(final String address) {
         // Se sono già connesso al dispositivo non interrompo la connessione
         if(this.connectionHandlerThread != null && this.connectionHandlerThread.isConnectedWith(address)) {
             Log.d("AndroidCar", "Già connesso al dispositivo");
@@ -132,7 +133,7 @@ public class ApplicationService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
 
-    private void stopComputing() {
+    public void stopComputing() {
         if(this.connectionHandlerThread != null) {
             Log.d("AndroidCar", "Termino connectionHandler");
             this.connectionHandlerThread.stopComputing();
@@ -167,13 +168,6 @@ public class ApplicationService extends Service {
         }
     }
 
-    private void setupBroadcastReceiver() {
-        // Uso un LocalBroadcastReceiver per non mandare i miei intent fuori dall'applicazione
-        final LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
-        localBroadcastManager.registerReceiver(this.myBroadcastReceiver, new IntentFilter(SET_DEVICE.name()));
-        localBroadcastManager.registerReceiver(this.myBroadcastReceiver, new IntentFilter(CLOSE_CONNECTION.name()));
-    }
-
     private void sendNotification() {
         final Intent i = new Intent(this, BluetoothActivity.class);
         final PendingIntent pi = PendingIntent.getActivity(this, 1, i, 0);
@@ -203,35 +197,14 @@ public class ApplicationService extends Service {
                     .setContentIntent(pi);
             notificationManager.notify(1, builder.build());
         }
-
-        // Scrivo su file il fatto che ho mandato la notifica
-        try {
-            final FileOutputStream outputStream = openFileOutput(Helper.NOTIFICATION_FILENAME, MODE_PRIVATE);
-            outputStream.write(1);
-            outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    private void stopService() {
-        this.stop = true;
+    public int getProgress() {
+        return progress;
     }
 
-    private final class MyBroadcastReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-
-            if(action.equals(SET_DEVICE.name())) {
-                final String address = intent.getStringExtra("address");
-                startApplicationService(address);
-
-            } else if(action.equals(CLOSE_CONNECTION.name())) {
-                stopComputing();
-            } else if(action.equals(STOP_SERVICE.name())) {
-                stopService();
-            }
-        }
+    public Event getEvent() {
+        return event;
     }
+
 }
