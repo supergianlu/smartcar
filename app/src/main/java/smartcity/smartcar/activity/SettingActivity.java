@@ -1,4 +1,4 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 
 import android.app.AlertDialog;
@@ -16,6 +16,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import smartcity.smartcar.R;
 import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;

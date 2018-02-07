@@ -1,16 +1,21 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import smartcity.smartcar.AccountManager;
+import smartcity.smartcar.R;
+import smartcity.smartcar.UrlConnectionAsyncTask;
+import smartcity.smartcar.Utente;
+import smartcity.smartcar.UtenteImpl;
 
 public class LoadingActivity extends Activity implements UrlConnectionAsyncTask.UrlConnectionListener {
 

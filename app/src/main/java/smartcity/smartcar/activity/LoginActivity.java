@@ -1,4 +1,4 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 import android.Manifest;
 import android.content.Intent;
@@ -19,6 +19,11 @@ import org.json.JSONObject;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import smartcity.smartcar.AccountManager;
+import smartcity.smartcar.R;
+import smartcity.smartcar.UrlConnectionAsyncTask;
+import smartcity.smartcar.Utente;
+import smartcity.smartcar.UtenteImpl;
 import smartcity.smartcar.utility.Helper;
 
 

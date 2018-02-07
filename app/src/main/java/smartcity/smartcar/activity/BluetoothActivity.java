@@ -1,4 +1,4 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 
 import android.app.AlertDialog;
@@ -16,12 +16,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.github.lzyzsd.circleprogress.DonutProgress;
+import com.github.lzyzsd.circleprogress.ArcProgress;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -31,6 +31,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import smartcity.smartcar.R;
 import smartcity.smartcar.model.ApplicationService;
 import smartcity.smartcar.model.Event;
 import smartcity.smartcar.utility.Helper;
@@ -46,11 +47,12 @@ public class BluetoothActivity extends MainActivity {
     private static final String savedInstanceFilename = "savedInstance.bin";
 
     private final MyBroadcastReceiver myBroadcastReceiver = new MyBroadcastReceiver();
-    private ProgressBar connecting; // icona di caricamento che viene mostrata durante la connessione ad un dipositivo
-    private TextView eventLogger; // Campo testuale per mostrare alcune frasi all'utente
+    private ProgressBar progressBar; // icona di caricamento che viene mostrata durante la connessione ad un dipositivo
     private CheckBox checkBox; // checkBox che indica che si è connessi ad un dispositivo
-    private DonutProgress progressBar;
-    private int progressBarTextColor; // colore di default di progressBar
+    private ArcProgress arcProgress;
+    private int progressBarTextColor; // colore di default di arcProgress
+    private Button connectButton;
+    private Button disconnectButton;
     private SharedPreferences prefs;
 
     @Override
@@ -67,7 +69,6 @@ public class BluetoothActivity extends MainActivity {
     private void startApplication() {
         /*
             Casi:
-
             - Bluetooth disattivo: chiedo all'utente di attivarlo attraverso il metodo startActivityForResult
             - Lista dei device paired vuota: mostro l'informazione all'utente
             - Device di default non accoppiato: indico all'utente di scegliere un device con cui connettersi dalle impostazioni
@@ -86,6 +87,7 @@ public class BluetoothActivity extends MainActivity {
                     this.showEvent(Event.DEVICE_NOT_FOUND, "");
                 } else {
                     intent.putExtra("address", defaultAddress); // Inserisco nell'Intent l'indirizzo del dispositivo di default
+                    checkBox.setText(defaultAddress);
                 }
             }
             startService(intent); // Faccio partire il service. Se era già partito non succede niente
@@ -102,40 +104,48 @@ public class BluetoothActivity extends MainActivity {
             public void run() {
                 switch (event) {
                     case BLUETOOTH_DISABLED:
-                        eventLogger.setText("Bluetooth disabilitato");
+                        arcProgress.setBottomText("Bluetooth disabilitato");
+                        checkBox.setText("Nessun device");
+                        checkBox.setChecked(false);
                         Log.d("AndroidCar", "Bluetooth disabilitato");
                         break;
 
                     case NO_DEVICES_PAIRED:
                         Log.d("AndroidCar", "Nessun device accoppiato al telefono");
-                        eventLogger.setText("Nessun device accoppiato");
-                        progressBar.setTextColor(progressBarTextColor);
+                        arcProgress.setBottomText("Nessun device accoppiato");
+                        checkBox.setText("Nessun device");
+                        checkBox.setChecked(false);
                         break;
 
                     case APPLICATION_STOPPED:
                         if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-                            eventLogger.setText("Disconnesso");
+                            arcProgress.setBottomText("Disconnesso");
                         } else {
-                            eventLogger.setText("Bluetooth disattivato");
+                            arcProgress.setBottomText("Bluetooth disattivato");
                         }
                         break;
 
                     case DEVICE_NOT_FOUND:
-                        eventLogger.setText("Scegli dispositivo a cui connettersi");
+                        arcProgress.setBottomText("Scegli dispositivo a cui connettersi");
+                        connectButton.setEnabled(true);
                         Log.d("AndroidCar", "Device di default non trovato");
                         break;
 
 
                     case CAR_NOT_CLOSED:
-                        eventLogger.setText("Non hai chiuso la macchina!");
+                        arcProgress.setBottomText("Non hai chiuso la macchina!");
                         break;
 
                     case TRYING_TO_CONNECT:
-                        eventLogger.setText(message);
+                        checkBox.setText(message);
+                        connectButton.setEnabled(false);
+                        disconnectButton.setEnabled(true);
                         break;
 
                     case CONNECTION_ESTABLISHED:
-                        eventLogger.setText(message);
+                        checkBox.setText(message);
+                        connectButton.setEnabled(false);
+                        disconnectButton.setEnabled(true);
                         updateProgressBar(0);
                         break;
 
@@ -150,7 +160,7 @@ public class BluetoothActivity extends MainActivity {
                         try {
                             final int probability = Integer.parseInt(message);
                             updateProgressBar(probability);
-                            eventLogger.setText("Macchina chiusa");
+                            arcProgress.setBottomText("Macchina chiusa");
                         } catch (Exception e) {e.printStackTrace();}
                         break;
 
@@ -165,29 +175,31 @@ public class BluetoothActivity extends MainActivity {
     private void modifyGUI(final Event e) {
         /* Mostro/nascondo la checkBox e la connectBar in base all'evento giunto
            Quando ricevo un messaggio/mi connetto ad un dispositivo mostro la checkBar
-           Quando provo a connettermi mostro la progressBar
+           Quando provo a connettermi mostro la arcProgress
            In tutti gli altri casi li nascondo entrambi
          */
         if(e.equals(Event.TRYING_TO_CONNECT)) {
-            connecting.setVisibility(View.VISIBLE);
-            checkBox.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+            checkBox.setChecked(false);
         } else if(e.equals(Event.MESSAGE_RECEIVED) || e.equals(Event.CONNECTION_ESTABLISHED)) {
-            connecting.setVisibility(View.INVISIBLE);
-            checkBox.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.INVISIBLE);
+            checkBox.setChecked(true);
         } else {
-            connecting.setVisibility(View.INVISIBLE);
-            checkBox.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.INVISIBLE);
+            checkBox.setChecked(false);
         }
     }
 
     private void setupGUI() {
-        this.connecting = findViewById(R.id.progressBar);
-        this.eventLogger = findViewById(R.id.eventLogger);
+        this.progressBar = findViewById(R.id.progressBar);
+        this.connectButton = findViewById(R.id.connectButton);
+        connectButton.setEnabled(false);
+        this.disconnectButton = findViewById(R.id.disconnectButton);
+        disconnectButton.setEnabled(false);
         this.checkBox = findViewById(R.id.checkBox);
-        this.checkBox.setEnabled(false);
-        this.checkBox.setChecked(true);
-        this.progressBar = findViewById(R.id.donut_progress);
-        this.progressBarTextColor = this.progressBar.getTextColor();
+        this.arcProgress = findViewById(R.id.arc_progress);
+        this.arcProgress.setProgress(0);
+        this.progressBarTextColor = this.arcProgress.getTextColor();
         this.onRestoreInstanceState(Bundle.EMPTY);
     }
 
@@ -230,10 +242,10 @@ public class BluetoothActivity extends MainActivity {
     public void onSaveInstanceState(final Bundle savedInstanceState) {
         try {
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(openFileOutput(savedInstanceFilename, MODE_PRIVATE));
-            objectOutputStream.writeUTF(this.eventLogger.getText().toString());
-            objectOutputStream.writeInt((int) this.progressBar.getProgress());
-            objectOutputStream.writeInt(this.checkBox.getVisibility());
-            objectOutputStream.writeInt(this.connecting.getVisibility());
+            objectOutputStream.writeUTF(this.checkBox.getText().toString());
+            objectOutputStream.writeInt(this.arcProgress.getProgress());
+            objectOutputStream.writeBoolean(this.checkBox.isChecked());
+            objectOutputStream.writeInt(this.progressBar.getVisibility());
             objectOutputStream.close();
         } catch (IOException e) {e.printStackTrace();}
     }
@@ -250,15 +262,15 @@ public class BluetoothActivity extends MainActivity {
 
         try {
             final ObjectInputStream inputStream = new ObjectInputStream(openFileInput(savedInstanceFilename));
-            this.eventLogger.setText(inputStream.readUTF());
+            this.checkBox.setText(inputStream.readUTF());
             this.updateProgressBar(inputStream.readInt());
-            this.checkBox.setVisibility(inputStream.readInt() == View.INVISIBLE? View.INVISIBLE : View.VISIBLE);
-            this.connecting.setVisibility(inputStream.readInt() == View.INVISIBLE? View.INVISIBLE : View.VISIBLE);
+            this.checkBox.setChecked(inputStream.readBoolean());
+            this.progressBar.setVisibility(inputStream.readInt() == View.INVISIBLE? View.INVISIBLE : View.VISIBLE);
             inputStream.close();
 
             if(notifica) {
-                this.checkBox.setVisibility(View.INVISIBLE);
-                this.connecting.setVisibility(View.INVISIBLE);
+                this.checkBox.setChecked(false);
+                this.progressBar.setVisibility(View.INVISIBLE);
                 Toast.makeText(this.getApplicationContext(), "Non hai chiuso la macchina!", Toast.LENGTH_LONG).show();
             }
         } catch (IOException e) {e.printStackTrace();}
@@ -271,7 +283,7 @@ public class BluetoothActivity extends MainActivity {
     protected void onActivityResult(final int requestCode, int resultCode, final Intent data) {
         if(requestCode == ENABLE_BLUETOOTH_ACTION) {
             if(resultCode == RESULT_OK) {
-                eventLogger.setText("");
+                checkBox.setText("");
 
                 /* Controllo se ho cliccato "connect to" dalle opzioni.
                    In tal caso dopo aver attivato il bluetooth devo aprire la lista dei device da scegliere per la connessione.
@@ -342,14 +354,14 @@ public class BluetoothActivity extends MainActivity {
     }
 
     private void updateProgressBar(final int progress) {
-        progressBar.setProgress(progress);
+        arcProgress.setProgress(progress);
 
         if (progress > prefs.getInt("myProbability", DEFAULT_PROB)) {
-            progressBar.setFinishedStrokeColor(Helper.CAR_CLOSED_COLOR);
-            progressBar.setTextColor(Helper.CAR_CLOSED_COLOR);
+            arcProgress.setFinishedStrokeColor(Helper.CAR_CLOSED_COLOR);
+            arcProgress.setTextColor(Helper.CAR_CLOSED_COLOR);
         } else {
-            progressBar.setFinishedStrokeColor(Helper.CAR_UNCLOSED_COLOR);
-            progressBar.setTextColor(Helper.CAR_UNCLOSED_COLOR);
+            arcProgress.setFinishedStrokeColor(Helper.CAR_UNCLOSED_COLOR);
+            arcProgress.setTextColor(Helper.CAR_UNCLOSED_COLOR);
         }
     }
 

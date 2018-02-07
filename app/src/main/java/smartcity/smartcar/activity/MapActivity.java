@@ -1,4 +1,4 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 
 import android.Manifest;
@@ -8,6 +8,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -38,9 +40,12 @@ import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import smartcity.smartcar.R;
 import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
 
@@ -99,6 +104,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                                 public void onInfoWindowClick(Marker marker) {
                                     if(marker.getPosition().equals(carLocation)){
                                         Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
+                                        marker.hideInfoWindow();
                                         setRoute(currentLocation, carLocation);
                                     }
                                 }
@@ -128,9 +134,25 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         // Add ten cluster items in close proximity, for purposes of this example.
         for (int i = 0; i < 10; i++) {
             double offset = i / 60d;
-            lat = lat + offset;
-            lng = lng + offset;
-            MyClusterItem offsetItem = new MyClusterItem(lat, lng, "Hai parcheggiato qui il 02/02/95", "\""+lat+"\", \""+lng+"\"");
+            lat = lat - offset;
+            lng = lng - offset;
+            String street;
+            Geocoder geocoder = new Geocoder(MapActivity.this, Locale.getDefault());
+            try {
+                List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
+
+                if (!addresses.isEmpty()) {
+                    Address returnedAddress = addresses.get(0);
+                    street = returnedAddress.getAddressLine(0);
+                }
+                else {
+                    street =  "\""+lat+"\",\""+lng+"\"";
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                street =  "\""+lat+"\",\""+lng+"\"";
+            }
+            MyClusterItem offsetItem = new MyClusterItem(lat, lng, "Hai parcheggiato qui il 02/02/95", street);
             clusterManager.addItem(offsetItem);
         }
         clusterManager.setOnClusterClickListener(new ClusterManager.OnClusterClickListener<ClusterItem>() {

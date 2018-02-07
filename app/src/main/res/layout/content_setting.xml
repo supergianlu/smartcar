@@ -12,11 +12,13 @@
         android:id="@+id/relativeLayout">
 
         <SeekBar
+            android:id="@+id/seekBarProbabilità"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
             android:layout_width="280dp"
             android:layout_height="wrap_content"
-            android:id="@+id/seekBarProbabilità"
-            android:layout_marginTop="80dp"
+            android:layout_below="@+id/textView"
             android:layout_centerHorizontal="true"
+            android:layout_marginTop="30dp"
             android:indeterminate="false"
             android:max="20" />
 
@@ -31,14 +33,14 @@
             android:layout_marginLeft="10dp" />
 
         <TextView
+            android:id="@+id/textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:text="Scegli probabilità minima di allarme"
-            android:id="@+id/textView"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="30dp" />
+            android:layout_marginTop="80dp"
+            android:text="Scegli la probabilità minima di allarme"
+            android:textSize="18sp" />
 
     </RelativeLayout>
 
@@ -51,22 +53,25 @@
         android:layout_below="@+id/relativeLayout">
 
         <TextView
+            android:id="@+id/devicesSelectionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:text="Scegli device di default"
-            android:id="@+id/devicesSelectionText"
             android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:text="Scegli il device di default"
+            android:textSize="18sp" />
 
         <Button
+            android:id="@+id/button"
+            style="@android:style/Widget.DeviceDefault.Button.Borderless.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/button"
-            android:layout_marginTop="15dp"
             android:layout_below="@+id/devicesSelectionText"
             android:layout_centerHorizontal="true"
-            style="@android:style/Widget.DeviceDefault.Button.Borderless.Small"
+            android:layout_marginTop="15dp"
+            android:background="#EEEEEE"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
             android:text=""
             android:textColor="#000000" />
 

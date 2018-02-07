@@ -1,4 +1,4 @@
-package smartcity.smartcar;
+package smartcity.smartcar.activity;
 
 import android.app.ProgressDialog;
 import android.os.Bundle;
@@ -15,6 +15,9 @@ import org.json.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import smartcity.smartcar.R;
+import smartcity.smartcar.UrlConnectionAsyncTask;
 
 
 public class SignupActivity extends AppCompatActivity implements UrlConnectionAsyncTask.UrlConnectionListener {

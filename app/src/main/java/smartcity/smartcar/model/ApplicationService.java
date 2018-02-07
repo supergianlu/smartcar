@@ -18,7 +18,7 @@ import android.util.Log;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import smartcity.smartcar.BluetoothActivity;
+import smartcity.smartcar.activity.BluetoothActivity;
 import smartcity.smartcar.R;
 import smartcity.smartcar.utility.Helper;
 
