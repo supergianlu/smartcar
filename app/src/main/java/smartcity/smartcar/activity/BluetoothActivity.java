@@ -1,38 +1,26 @@
 package smartcity.smartcar.activity;
 
 
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.github.lzyzsd.circleprogress.ArcProgress;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import smartcity.smartcar.R;
 import smartcity.smartcar.model.ApplicationService;
 import smartcity.smartcar.model.Event;
-import smartcity.smartcar.utility.Helper;
-
-import static smartcity.smartcar.model.MyIntentFilter.CLOSE_CONNECTION;
-import static smartcity.smartcar.model.MyIntentFilter.SET_DEVICE;
 
 
 public class BluetoothActivity extends MainActivity implements ServiceConnection{
@@ -54,9 +42,7 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
 
         this.progressBar = findViewById(R.id.progressBar);
         this.connectButton = findViewById(R.id.connectButton);
-        connectButton.setEnabled(false);
         this.disconnectButton = findViewById(R.id.disconnectButton);
-        disconnectButton.setEnabled(false);
         this.checkBox = findViewById(R.id.checkBox);
         this.arcProgress = findViewById(R.id.arc_progress);
 
@@ -64,7 +50,14 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
             @Override
             public void onClick(View view) {
                 if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-                    showDeviceList();
+                    String deviceAddress = prefs.getString("myDeviceAddress", null);
+                    if(deviceAddress != null){
+                        service.startApplicationService(deviceAddress);
+                        connectButton.setEnabled(false);
+                        //TODO modifico la gui dicendo che mi sto connettendo
+                    } else {
+                        Toast.makeText(BluetoothActivity.this, "Selezionare un device dalle impostazioni", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, 1);
@@ -76,7 +69,7 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
             @Override
             public void onClick(View view) {
                 service.stopComputing();
-                modifyGUI(Event.DISCONNECT, 0);
+                modifyGUI(Event.DISCONNECT, -1);
                 //TODO stop service
             }
         });
@@ -196,64 +189,23 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
         disconnectButton.setEnabled(false);
     }
 
-    private void showDeviceList() {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Scegli device");
-
-        // Bundle per ricordare posizione del device scelto
-        final Bundle bundle = new Bundle();
-        bundle.putInt("selected", 0);
-
-        // Creo array di CharSequence da inserire nel Dialog
-        final List<BluetoothDevice> devices = new ArrayList<>(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
-        final CharSequence[] array = new CharSequence[devices.size()];
-        for (int i = 0; i < devices.size(); i++) {
-            array[i] = devices.get(i).getName();
-        }
-
-        // Inserisco nel dialog la lista dei device
-        builder.setSingleChoiceItems(array, 0, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Quando seleziono un device dalla lista memorizzo la sua posizione nel bundle
-                bundle.putInt("selected", which);
-            }
-        });
-
-        builder.setPositiveButton("Connetti", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                /* Grazie alla variabile salvata nel bundle posso recuperare il device selezionato dalla lista
-                   e comunicarlo al Controller. Stopppo l'applicazione perchè deve sapere che l'ho terminata forzatamente
-                 */
-                final int position = bundle.getInt("selected");
-                final BluetoothDevice device = devices.get(position);
-                service.startApplicationService(device.getAddress());
-                connectButton.setEnabled(false);
-            }
-        });
-
-        builder.setNegativeButton("Cancella", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) { }
-        });
-
-        builder.create().show();
-    }
-
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder binder) {
         ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
         service = b.getService();
         connectButton.setEnabled(true);
         disconnectButton.setEnabled(true);
-        //modifyGUI(service.getEvent(), service.getProgress());
+        if(service.getEvent() != null && service.getProbability() != -1) {
+            modifyGUI(service.getEvent(), service.getProbability());
+        } else {
+            //TODO non sono connesso
+        }
         /*parto mettendo l'evento di provarmi a connettere e poi lo cambio direttamente dal service*/
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-
+        service = null;
     }
 
 }

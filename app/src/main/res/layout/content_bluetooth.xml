@@ -50,25 +50,21 @@
             android:id="@+id/connectButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/colorPrimary"
             android:layout_margin="16dp"
-            android:gravity="center"
-            android:text="Connetti"
+            android:layout_weight="1"
             android:enabled="false"
-            android:textColor="#FFFFFF" />
+            android:gravity="center"
+            android:text="Connetti" />
 
         <Button
             android:id="@+id/disconnectButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/colorPrimary"
             android:layout_margin="16dp"
-            android:gravity="center"
-            android:text="Disconnetti"
+            android:layout_weight="1"
             android:enabled="false"
-            android:textColor="#FFFFFF" />
+            android:gravity="center"
+            android:text="Disconnetti" />
     </LinearLayout>
 
 </LinearLayout>

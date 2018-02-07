@@ -1,33 +1,24 @@
 package smartcity.smartcar.model;
 
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Binder;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 import smartcity.smartcar.activity.BluetoothActivity;
 import smartcity.smartcar.R;
 import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.model.Event.*;
-import static smartcity.smartcar.model.MyIntentFilter.*;
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 
 
@@ -52,16 +43,12 @@ public class ApplicationService extends Service {
 
 
     private ConnectionHandlerThread connectionHandlerThread;
-    private int actualProbability = -1;
     private long lastUpdateTime;
-    private boolean stop;
-
 
     private final IBinder mBinder = new MyBinder();
     private String deviceAddress;
     private int minProbability;
-    private int progress;
-    private String arcText;
+    private int probability;
     private Event event;
 
     public class MyBinder extends Binder {
@@ -77,9 +64,12 @@ public class ApplicationService extends Service {
         if(deviceAddress == null) {
             stopSelf();
         } else {
-            minProbability = prefs.getInt("myProbability", 40);
+            minProbability = prefs.getInt("myProbability", DEFAULT_PROB);
+            probability = -1;
 
             //TODO QUI O NELL?ON START COMMAND??
+            //Un'altra cosa, quando modifico le robe nelle impostazioni, metto nell'onstartcommand i cambiamenti?
+            //oppure stoppo e riavvio il service?
             startApplicationService(deviceAddress);
         }
     }
@@ -96,19 +86,21 @@ public class ApplicationService extends Service {
         return Service.START_STICKY;
     }
 
-    public void notifyEvent(Event event, String message) {
+    public void notifyEvent(Event event, int probability) {
+        this.event = event;
         switch (event) {
             case MESSAGE_RECEIVED:
-                try {
-                    this.actualProbability = Integer.parseInt(message);
-                }catch (Exception e) {e.printStackTrace();}
-
+                this.probability = probability;
                 this.lastUpdateTime = System.currentTimeMillis();
-                this.sendBroadcast(event, message);
                 break;
 
-            case DISCONNECTED: this.valutaChiusuraMacchina(); break;
-            default: this.sendBroadcast(event, message); break;
+            case DISCONNECTED:
+                this.valutaChiusuraMacchina();
+                break;
+
+            default:
+                this.probability = probability;
+                break;
         }
     }
 
@@ -124,48 +116,40 @@ public class ApplicationService extends Service {
         }
     }
 
-    /* Per mandare un Intent implicito attraverso il LocalBroadcastManager in modo più semplice. */
-    private void sendBroadcast(final Event event, final String s) {
-        final Intent intent = new Intent(event.name());
-        final Bundle bundle = new Bundle();
-        bundle.putString("message", s);
-        intent.putExtras(bundle);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-    }
-
     public void stopComputing() {
         if(this.connectionHandlerThread != null) {
             Log.d("AndroidCar", "Termino connectionHandler");
             this.connectionHandlerThread.stopComputing();
         }
+        stopSelf();
     }
 
     private void valutaChiusuraMacchina() {
         Log.d("AndroidCar", "Valuto chiusura macchina");
 
         // Probabilità attuale minore di quella minima ---> lancio allarme
-        SharedPreferences prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
-        if(this.actualProbability <= prefs.getInt("myProbability", DEFAULT_PROB)) {
+        if(this.probability <= minProbability) {
             Log.d("AndroidCar", "Non hai chiuso la macchina!");
-            this.notifyEvent(CAR_NOT_CLOSED, Integer.toString(this.actualProbability));
+            this.notifyEvent(CAR_NOT_CLOSED, this.probability);
             this.sendNotification();
 
         } else {
             final long time = System.currentTimeMillis() - this.lastUpdateTime;
 
             if(time < 15000) {
-                this.actualProbability += 35;
+                this.probability += 35;
             } else if(time > 15000 && time < 30000){
-                this.actualProbability += 25;
+                this.probability += 25;
             } else if(time > 30000 && time < 45000){
-                this.actualProbability += 15;
+                this.probability += 15;
             } else {
-                this.actualProbability += 5;
+                this.probability += 5;
             }
 
-            Log.d("AndroidCar", "Hai chiuso la macchina al " + this.actualProbability + "%");
-            this.notifyEvent(CAR_CLOSED, this.actualProbability + "");
+            Log.d("AndroidCar", "Hai chiuso la macchina al " + this.probability + "%");
+            this.notifyEvent(CAR_CLOSED, this.probability);
         }
+        //TODO in ognuno dei due casi salvo nel db il parcheggio
     }
 
     private void sendNotification() {
@@ -199,8 +183,8 @@ public class ApplicationService extends Service {
         }
     }
 
-    public int getProgress() {
-        return progress;
+    public int getProbability() {
+        return probability;
     }
 
     public Event getEvent() {

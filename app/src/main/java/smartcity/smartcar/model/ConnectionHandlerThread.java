@@ -43,7 +43,7 @@ public final class ConnectionHandlerThread extends Thread {
         while(!stop) {
 
             if(this.connect()) {
-                service.notifyEvent(Event.CONNECTION_ESTABLISHED, this.device.getName());
+                service.notifyEvent(Event.CONNECTION_ESTABLISHED, -1);
                 this.handleConnection();
             }
 
@@ -65,12 +65,12 @@ public final class ConnectionHandlerThread extends Thread {
         while(!this.stop) {
 
             Log.d("AndroidCar", "Provo a connettermi a " + this.device.getName());
-            service.notifyEvent(Event.TRYING_TO_CONNECT, this.device.getName());
+            service.notifyEvent(Event.TRYING_TO_CONNECT, -1);
 
             // Se il bluetooth è disattivato interrompo il thread e lo notifico al service
             if(!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
                 Log.d("AndroidCar", "Bluetooth disattivato mentre tentavo di connettermi");
-                service.notifyEvent(Event.BLUETOOTH_DISABLED, "");
+                service.notifyEvent(Event.BLUETOOTH_DISABLED, -1);
                 this.stopComputing();
                 return false;
             }
@@ -100,13 +100,13 @@ public final class ConnectionHandlerThread extends Thread {
             try {
                 String receive = Helper.readFromStream(this.socket.getInputStream());
                 Log.d("AndroidCar", "Ricevuto: " + receive);
-                service.notifyEvent(Event.MESSAGE_RECEIVED, receive);
+                service.notifyEvent(Event.MESSAGE_RECEIVED, Integer.parseInt(receive));
                 sleep(100);
             } catch (IOException | IllegalStateException e) {
                 this.closeConnection();
 
                 if(!this.stop){
-                    service.notifyEvent(Event.DISCONNECTED, this.device.getName());
+                    service.notifyEvent(Event.DISCONNECTED, -1);
                 }
 
                 stopHandlingConnection = true;
