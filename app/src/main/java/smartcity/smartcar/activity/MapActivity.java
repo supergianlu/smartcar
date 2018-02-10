@@ -2,7 +2,9 @@ package smartcity.smartcar.activity;
 
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -14,6 +16,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.view.View;
 import android.widget.Toast;
@@ -50,6 +53,7 @@ import smartcity.smartcar.R;
 import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
 import smartcity.smartcar.model.ApplicationService;
+import smartcity.smartcar.utility.Helper;
 
 public class MapActivity extends MainActivity implements OnMapReadyCallback {
 
@@ -76,23 +80,10 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
             }
         });
 
-        if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-            startService();
+        if(!Helper.isMyServiceRunning(getApplicationContext(), ApplicationService.class)){
+            Snackbar snackbar = Snackbar.make(findViewById(R.id.drawer_layout), "La connessione col device è disattivata", Snackbar.LENGTH_LONG);
+            snackbar.show();
         }
-    }
-
-    @Override
-    protected void onActivityResult(final int requestCode, int resultCode, final Intent data) {
-        if(requestCode == 1) {
-            if(resultCode == RESULT_OK) {
-                startService();
-            }
-        }
-    }
-
-    private void startService(){
-        Intent service = new Intent(getApplicationContext(), ApplicationService.class);
-        getApplicationContext().startService(service);
     }
 
     @Override
@@ -219,4 +210,5 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         LatLngBounds bounds = new LatLngBounds(southwest, northeast);
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
     }
+
 }

@@ -12,7 +12,9 @@ import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import smartcity.smartcar.activity.BluetoothActivity;
 import smartcity.smartcar.R;
@@ -20,6 +22,7 @@ import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.model.Event.*;
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
+import static smartcity.smartcar.utility.Helper.NO_PROB;
 
 
 /**
@@ -43,34 +46,18 @@ public class ApplicationService extends Service {
 
 
     private ConnectionHandlerThread connectionHandlerThread;
-    private long lastUpdateTime;
+    private long lastUpdateTime; //TODO così utile sta roba del tempo?
 
     private final IBinder mBinder = new MyBinder();
+    private SharedPreferences prefs;
     private String deviceAddress;
-    private int minProbability;
-    private int probability;
+    private int probability = NO_PROB;
     private Event event;
+    private boolean running;
 
     public class MyBinder extends Binder {
         public ApplicationService getService() {
             return ApplicationService.this;
-        }
-    }
-
-    @Override
-    public void onCreate() {
-        SharedPreferences prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
-        deviceAddress = prefs.getString("myDeviceAddress", null);
-        if(deviceAddress == null) {
-            stopSelf();
-        } else {
-            minProbability = prefs.getInt("myProbability", DEFAULT_PROB);
-            probability = -1;
-
-            //TODO QUI O NELL?ON START COMMAND??
-            //Un'altra cosa, quando modifico le robe nelle impostazioni, metto nell'onstartcommand i cambiamenti?
-            //oppure stoppo e riavvio il service?
-            startApplicationService(deviceAddress);
         }
     }
 
@@ -82,16 +69,25 @@ public class ApplicationService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
+        prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
+        deviceAddress = prefs.getString("myDeviceAddress", null);
+        if(deviceAddress == null) {
+            stopComputing();
+            stopSelf();
+            Toast.makeText(this, "Selezionare un device bluetooth dalle impostazioni", Toast.LENGTH_SHORT).show();
+        } else {
+            startApplicationService(deviceAddress);
+        }
         return Service.START_STICKY;
     }
 
-    public void notifyEvent(Event event, int probability) {
+    public void saveAndSendEvent(Event event, int probability) {
         this.event = event;
         switch (event) {
             case MESSAGE_RECEIVED:
                 this.probability = probability;
                 this.lastUpdateTime = System.currentTimeMillis();
+                this.sendBroadcast(event, probability);
                 break;
 
             case DISCONNECTED:
@@ -100,6 +96,7 @@ public class ApplicationService extends Service {
 
             default:
                 this.probability = probability;
+                this.sendBroadcast(event, probability);
                 break;
         }
     }
@@ -110,6 +107,7 @@ public class ApplicationService extends Service {
             Log.d("AndroidCar", "Già connesso al dispositivo");
         } else {
             this.stopComputing();
+            running = true;
             final BluetoothDevice device = Helper.getDeviceByAddress(address);
             this.connectionHandlerThread = new ConnectionHandlerThread(device, this);
             this.connectionHandlerThread.start();
@@ -117,20 +115,20 @@ public class ApplicationService extends Service {
     }
 
     public void stopComputing() {
+        running = false;
         if(this.connectionHandlerThread != null) {
             Log.d("AndroidCar", "Termino connectionHandler");
             this.connectionHandlerThread.stopComputing();
         }
-        stopSelf();
     }
 
     private void valutaChiusuraMacchina() {
         Log.d("AndroidCar", "Valuto chiusura macchina");
 
         // Probabilità attuale minore di quella minima ---> lancio allarme
-        if(this.probability <= minProbability) {
+        if(this.probability <= prefs.getInt("myProbability", DEFAULT_PROB)) {
             Log.d("AndroidCar", "Non hai chiuso la macchina!");
-            this.notifyEvent(CAR_NOT_CLOSED, this.probability);
+            this.saveAndSendEvent(CAR_NOT_CLOSED, this.probability);
             this.sendNotification();
 
         } else {
@@ -147,9 +145,16 @@ public class ApplicationService extends Service {
             }
 
             Log.d("AndroidCar", "Hai chiuso la macchina al " + this.probability + "%");
-            this.notifyEvent(CAR_CLOSED, this.probability);
+            this.saveAndSendEvent(CAR_CLOSED, this.probability);
         }
         //TODO in ognuno dei due casi salvo nel db il parcheggio
+    }
+
+    /* Per mandare un Intent implicito attraverso il LocalBroadcastManager in modo più semplice. */
+    private void sendBroadcast(final Event event, final int probability) {
+        final Intent intent = new Intent(event.name());
+        intent.putExtra("probability", probability);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
 
     private void sendNotification() {
@@ -183,12 +188,17 @@ public class ApplicationService extends Service {
         }
     }
 
-    public int getProbability() {
-        return probability;
-    }
-
     public Event getEvent() {
         return event;
     }
 
+    @Override
+    public boolean stopService(Intent intent) {
+        stopComputing();
+        return super.stopService(intent);
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
 }

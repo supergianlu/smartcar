@@ -2,13 +2,17 @@ package smartcity.smartcar.activity;
 
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.design.widget.Snackbar;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -21,9 +25,12 @@ import com.github.lzyzsd.circleprogress.ArcProgress;
 import smartcity.smartcar.R;
 import smartcity.smartcar.model.ApplicationService;
 import smartcity.smartcar.model.Event;
+import smartcity.smartcar.utility.Helper;
+
+import static smartcity.smartcar.utility.Helper.NO_PROB;
 
 
-public class BluetoothActivity extends MainActivity implements ServiceConnection{
+public class BluetoothActivity extends MainActivity implements ServiceConnection {
 
     private ApplicationService service;
     private ProgressBar progressBar;
@@ -33,18 +40,47 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
     private Button disconnectButton;
     private SharedPreferences prefs;
 
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String eventName = intent.getAction();
+
+            for(Event event : Event.values()) {
+                if(event.name().equals(eventName)) {
+                    modifyGUI(Event.valueOf(intent.getAction()), intent.getIntExtra("probability", NO_PROB));
+                }
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
         setUpMainActivity();
-        this.prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
+        prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
 
-        this.progressBar = findViewById(R.id.progressBar);
-        this.connectButton = findViewById(R.id.connectButton);
-        this.disconnectButton = findViewById(R.id.disconnectButton);
-        this.checkBox = findViewById(R.id.checkBox);
-        this.arcProgress = findViewById(R.id.arc_progress);
+        final LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
+        for(Event e : Event.values())
+            localBroadcastManager.registerReceiver(this.broadcastReceiver, new IntentFilter(e.name()));
+
+        progressBar = findViewById(R.id.progressBar);
+        connectButton = findViewById(R.id.connectButton);
+        disconnectButton = findViewById(R.id.disconnectButton);
+        checkBox = findViewById(R.id.checkBox);
+        arcProgress = findViewById(R.id.arc_progress);
+
+        String deviceAddress = prefs.getString("myDeviceAddress", null);
+        if(deviceAddress != null){
+            if(Helper.getDeviceByAddress(deviceAddress) != null){
+                checkBox.setText(Helper.getDeviceByAddress(deviceAddress).getName());
+            } else {
+                modifyGUI(Event.BLUETOOTH_DISABLED, NO_PROB);
+            }
+        } else {
+            checkBox.setText("Nessun device");
+            arcProgress.setBottomText("Selezionare un device dalle impostazioni");
+        }
 
         connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -52,11 +88,20 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
                 if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
                     String deviceAddress = prefs.getString("myDeviceAddress", null);
                     if(deviceAddress != null){
-                        service.startApplicationService(deviceAddress);
+                        startService(new Intent(getApplicationContext(), ApplicationService.class));
                         connectButton.setEnabled(false);
-                        //TODO modifico la gui dicendo che mi sto connettendo
+                        //modifyGUI(Event.TRYING_TO_CONNECT, NO_PROB);
                     } else {
-                        Toast.makeText(BluetoothActivity.this, "Selezionare un device dalle impostazioni", Toast.LENGTH_SHORT).show();
+                        Snackbar snackbar = Snackbar.make(findViewById(R.id.drawer_layout), "Selezionare un device dalle impostazioni", Snackbar.LENGTH_LONG);
+                        snackbar.setAction("VAI", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Intent intent = new Intent(BluetoothActivity.this, SettingActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        });
+                        snackbar.show();
                     }
                 } else {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -69,47 +114,29 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
             @Override
             public void onClick(View view) {
                 service.stopComputing();
-                modifyGUI(Event.DISCONNECT, -1);
-                //TODO stop service
+                stopService(new Intent(getApplicationContext(), ApplicationService.class));
+                modifyGUI(Event.DISCONNECT, NO_PROB);
             }
         });
 
         Intent intent= new Intent(this, ApplicationService.class);
         bindService(intent, this, Context.BIND_AUTO_CREATE);
-        //on destroy unbind?? bo
     }
 
-    /*private void startApplication() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(this);
+    }
 
-           // Casi:
-            //- Bluetooth disattivo: chiedo all'utente di attivarlo attraverso il metodo startActivityForResult
-            //- Lista dei device paired vuota: mostro l'informazione all'utente
-            //- Device di default non accoppiato: indico all'utente di scegliere un device con cui connettersi dalle impostazioni
-            //- Device di default trovato: provo a connettermi
-
-        if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-            final Intent intent = new Intent(this, ApplicationService.class);
-
-            if(BluetoothAdapter.getDefaultAdapter().getBondedDevices().isEmpty()) {
-                this.showEvent(Event.NO_DEVICES_PAIRED, "");
-            } else {
-                final BluetoothDevice device = Helper.getDeviceByAddress(prefs.getString("myDeviceAddress", ""));
-                if(device == null) {
-                    // Device di default non accoppiato
-                    this.showEvent(Event.DEVICE_NOT_FOUND, "");
-                } else {
-                    intent.putExtra("address", device.getAddress()); // Inserisco nell'Intent l'indirizzo del dispositivo di default
-                    checkBox.setText(device.getName());
-                }
+    @Override
+    protected void onActivityResult(final int requestCode, int resultCode, final Intent data) {
+        if(requestCode == 1) {
+            if(resultCode == RESULT_OK) {
+                recreate();
             }
-            startService(intent); // Faccio partire il service. Se era già partito non succede niente
-        } else {
-            // Chiedo all'utente di attivare il bluetooth
-            this.showEvent(Event.BLUETOOTH_DISABLED, "");
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, 1);
         }
-    }*/
+    }
 
     private void modifyGUI(final Event event, final int progress) {
         runOnUiThread(new Runnable() {
@@ -117,6 +144,7 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
             public void run() {
                 switch (event) {
                     case BLUETOOTH_DISABLED:
+                        checkBox.setText("Nessun device");
                         arcProgress.setBottomText("Bluetooth disabilitato");
                         modifyNoConnectionGUI();
                         break;
@@ -181,31 +209,27 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
         });
     }
 
-    private void modifyNoConnectionGUI(){
-        progressBar.setVisibility(View.INVISIBLE);
-        checkBox.setText("Nessun device");
-        checkBox.setChecked(false);
-        connectButton.setEnabled(true);
-        disconnectButton.setEnabled(false);
-    }
-
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder binder) {
         ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
         service = b.getService();
-        connectButton.setEnabled(true);
-        disconnectButton.setEnabled(true);
-        if(service.getEvent() != null && service.getProbability() != -1) {
-            modifyGUI(service.getEvent(), service.getProbability());
+        if(service.isRunning() && service.getEvent() != null){
+            modifyGUI(service.getEvent(), NO_PROB);
         } else {
-            //TODO non sono connesso
+            modifyGUI(Event.DISCONNECT, NO_PROB);
         }
-        /*parto mettendo l'evento di provarmi a connettere e poi lo cambio direttamente dal service*/
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
         service = null;
+    }
+
+    private void modifyNoConnectionGUI(){
+        progressBar.setVisibility(View.INVISIBLE);
+        checkBox.setChecked(false);
+        connectButton.setEnabled(true);
+        disconnectButton.setEnabled(false);
     }
 
 }

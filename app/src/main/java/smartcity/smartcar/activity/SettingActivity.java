@@ -4,9 +4,14 @@ package smartcity.smartcar.activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -17,12 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import smartcity.smartcar.R;
+import smartcity.smartcar.model.ApplicationService;
 import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 
-public class SettingActivity extends MainActivity {
+public class SettingActivity extends MainActivity implements ServiceConnection{
 
+    private ApplicationService service;
     private TextView text;
     private Button button;
     private SharedPreferences prefs;
@@ -37,7 +44,6 @@ public class SettingActivity extends MainActivity {
 
         deviceIndex = 0;
         prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
-        editor = prefs.edit();
 
         this.text = findViewById(R.id.valueProbabilità);
         final TextView selectionDeviceText = findViewById(R.id.devicesSelectionText);
@@ -55,7 +61,7 @@ public class SettingActivity extends MainActivity {
                 final String defaultDeviceAddress = Helper.getDefaultDeviceAddress(prefs.getString("myDeviceAddress", ""));
                 // Se la stringa è vuota significa che il device di default non è accoppiato con il telefono
                 if(defaultDeviceAddress.isEmpty()) {
-                    button.setText(devices.get(0).getName());
+                    button.setText("Scegli il device");
                 } else {
                     // Cerco il nome associato all'indirizzo del device di default
                     for(BluetoothDevice device : devices) {
@@ -79,8 +85,12 @@ public class SettingActivity extends MainActivity {
         } else {
             selectionDeviceText.setVisibility(View.INVISIBLE);
             this.button.setVisibility(View.INVISIBLE);
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, 1);
         }
 
+        Intent intent= new Intent(this, ApplicationService.class);
+        bindService(intent, this, Context.BIND_AUTO_CREATE);
     }
 
     private void showDeviceList(final List<BluetoothDevice> devices) {
@@ -108,8 +118,13 @@ public class SettingActivity extends MainActivity {
                 // Riprendo la posizione salvata nel bundle e cambio il device di default
                 final BluetoothDevice device = devices.get(deviceIndex);
                 button.setText(device.getName());
+                editor = prefs.edit();
                 editor.putString("myDeviceAddress", device.getAddress());
                 editor.apply();
+                if(service != null && service.isRunning()){
+                    Intent serviceIntent = new Intent(getApplicationContext(), ApplicationService.class);
+                    startService(serviceIntent);
+                }
             }
         });
 
@@ -149,6 +164,7 @@ public class SettingActivity extends MainActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                     final int actualValue = this.value * this.rapporto;
+                    editor = prefs.edit();
                     editor.putInt("myProbability", actualValue);
                     editor.apply();
                     Log.d("AndroidCar", "Settata probabilità minima a " + actualValue);
@@ -156,4 +172,29 @@ public class SettingActivity extends MainActivity {
         });
     }
 
+    @Override
+    protected void onActivityResult(final int requestCode, int resultCode, final Intent data) {
+        if(requestCode == 1) {
+            if(resultCode == RESULT_OK) {
+                recreate();
+            }
+        }
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder binder) {
+        ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
+        service = b.getService();
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        service = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(this);
+    }
 }

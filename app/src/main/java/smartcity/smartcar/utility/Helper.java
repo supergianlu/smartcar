@@ -1,5 +1,6 @@
 package smartcity.smartcar.utility;
 
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -18,39 +19,17 @@ import java.util.UUID;
 public class Helper {
 
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    // Colore da mostrare nella progressBar quando è probabile che la macchina sia chiusa
-    public static final int CAR_CLOSED_COLOR = Color.rgb(19, 166, 13);
-    // Colore da mostrare nella progressBar quando la macchina non è chiusa
-    public static final int CAR_UNCLOSED_COLOR = Color.rgb(217, 0, 0);
     public static final int DEFAULT_PROB = 40;
+    public static final int NO_PROB = -1;
 
-    // File dove segnare il fatto che ho inviato la notifica
-    public static final String NOTIFICATION_FILENAME = "notifica.bin";
-
-    /**
-     * Funzione che trova un device accoppiato a partire dal suo nome.
-     * Occore prima effettuare l'operazione di pairing, questa funzione non effettua discovery di device nelle vicinanze per trovare
-     * quello cercato!
-     * @param name Nome del device che si vuole cercare
-     * @return device trovato, null altrimenti
-     */
-    public static BluetoothDevice getDeviceByName(final String name) {
-        for(BluetoothDevice b : BluetoothAdapter.getDefaultAdapter().getBondedDevices()) {
-            if(b.getName().equals(name)) {
-                return b;
+    public static boolean isMyServiceRunning(Context context, Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
             }
         }
-
-        return null;
-    }
-
-    public static BluetoothDevice getDeviceByAddress(final String address){
-        for(BluetoothDevice device : BluetoothAdapter.getDefaultAdapter().getBondedDevices()) {
-            if(device.getAddress().equals(address)) {
-                return device;
-            }
-        }
-        return null;
+        return false;
     }
 
     /**
@@ -107,22 +86,18 @@ public class Helper {
                 return address;
             }
         }
-
-        for (String s : getDefaultDeviceNames()) {
-            BluetoothDevice device = getDeviceByName(s);
-            if(device != null) {
-                return device.getAddress();
-            }
-        }
-
         return "";
     }
 
-    private static List<String> getDefaultDeviceNames() {
-        final List<String> list = new ArrayList<>();
-        Collections.addAll(list, "HC-05", "HC-06");
-        return Collections.unmodifiableList(list);
+    public static BluetoothDevice getDeviceByAddress(final String address){
+        for(BluetoothDevice device : BluetoothAdapter.getDefaultAdapter().getBondedDevices()) {
+            if(device.getAddress().equals(address)) {
+                return device;
+            }
+        }
+        return null;
     }
+
 
     public static boolean hasPermissions(Context context, String... permissions) {
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
