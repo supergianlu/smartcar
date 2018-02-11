@@ -1,7 +1,11 @@
 package smartcity.smartcar.activity;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -12,9 +16,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
 import smartcity.smartcar.R;
+import smartcity.smartcar.model.ApplicationService;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
+
+    protected ApplicationService service;
 
     @Override
     public void onBackPressed() {
@@ -38,6 +45,10 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_setting) {
             intent = new Intent(this, SettingActivity.class);
         } else if (id == R.id.nav_logout) {
+            if(service.isRunning()){
+                service.stopComputing();
+                stopService(new Intent(getApplicationContext(), ApplicationService.class));
+            }
             SharedPreferences.Editor editor = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE).edit();
             editor.putString("username", null);
             editor.putString("password", null);
@@ -64,5 +75,24 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        Intent intent= new Intent(this, ApplicationService.class);
+        bindService(intent, this, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder binder) {
+        ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
+        service = b.getService();
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        service = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(this);
     }
 }

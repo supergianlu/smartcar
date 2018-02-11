@@ -30,9 +30,8 @@ import smartcity.smartcar.utility.Helper;
 import static smartcity.smartcar.utility.Helper.NO_PROB;
 
 
-public class BluetoothActivity extends MainActivity implements ServiceConnection {
+public class BluetoothActivity extends MainActivity {
 
-    private ApplicationService service;
     private ProgressBar progressBar;
     private CheckBox checkBox;
     private ArcProgress arcProgress;
@@ -118,15 +117,6 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
                 modifyGUI(Event.DISCONNECT, NO_PROB);
             }
         });
-
-        Intent intent= new Intent(this, ApplicationService.class);
-        bindService(intent, this, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unbindService(this);
     }
 
     @Override
@@ -218,11 +208,6 @@ public class BluetoothActivity extends MainActivity implements ServiceConnection
         } else {
             modifyGUI(Event.DISCONNECT, NO_PROB);
         }
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName componentName) {
-        service = null;
     }
 
     private void modifyNoConnectionGUI(){

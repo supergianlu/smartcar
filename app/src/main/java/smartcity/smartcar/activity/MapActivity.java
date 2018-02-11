@@ -4,6 +4,7 @@ package smartcity.smartcar.activity;
 import android.Manifest;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,6 +16,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -79,11 +81,6 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                 finish();
             }
         });
-
-        if(!Helper.isMyServiceRunning(getApplicationContext(), ApplicationService.class)){
-            Snackbar snackbar = Snackbar.make(findViewById(R.id.drawer_layout), "La connessione col device è disattivata", Snackbar.LENGTH_LONG);
-            snackbar.show();
-        }
     }
 
     @Override
@@ -209,6 +206,15 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         LatLng northeast = route.getBound().getNortheastCoordination().getCoordination();
         LatLngBounds bounds = new LatLngBounds(southwest, northeast);
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder binder) {
+        ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
+        service = b.getService();
+        if(!service.isRunning()){
+            Toast.makeText(this, "La connessione col device è disattivata", Toast.LENGTH_LONG).show();
+        }
     }
 
 }

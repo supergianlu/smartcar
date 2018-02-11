@@ -4,14 +4,11 @@ package smartcity.smartcar.activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -29,7 +26,6 @@ import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 
 public class SettingActivity extends MainActivity implements ServiceConnection{
 
-    private ApplicationService service;
     private TextView text;
     private Button button;
     private SharedPreferences prefs;
@@ -88,9 +84,6 @@ public class SettingActivity extends MainActivity implements ServiceConnection{
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, 1);
         }
-
-        Intent intent= new Intent(this, ApplicationService.class);
-        bindService(intent, this, Context.BIND_AUTO_CREATE);
     }
 
     private void showDeviceList(final List<BluetoothDevice> devices) {
@@ -179,22 +172,5 @@ public class SettingActivity extends MainActivity implements ServiceConnection{
                 recreate();
             }
         }
-    }
-
-    @Override
-    public void onServiceConnected(ComponentName componentName, IBinder binder) {
-        ApplicationService.MyBinder b = (ApplicationService.MyBinder) binder;
-        service = b.getService();
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName componentName) {
-        service = null;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        unbindService(this);
     }
 }
