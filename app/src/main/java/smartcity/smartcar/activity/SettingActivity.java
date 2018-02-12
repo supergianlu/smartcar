@@ -113,6 +113,7 @@ public class SettingActivity extends MainActivity implements ServiceConnection{
                 button.setText(device.getName());
                 editor = prefs.edit();
                 editor.putString("myDeviceAddress", device.getAddress());
+                editor.putString("myDeviceName", device.getName());
                 editor.apply();
                 if(service != null && service.isRunning()){
                     Intent serviceIntent = new Intent(getApplicationContext(), ApplicationService.class);

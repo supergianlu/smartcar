@@ -97,12 +97,14 @@ public class UrlConnectionAsyncTask extends AsyncTask<Bundle, Void, JSONObject> 
     }
 
     protected void onPostExecute(JSONObject response) {
-        if(response != null) {
-            this.observer.handleResponse(response, Bundle.EMPTY);
-        } else {
-            final Bundle extra = new Bundle();
-            extra.putInt("code", -1);
-            this.observer.handleResponse(new JSONObject(), extra);
+        if(observer != null) {
+            if (response != null) {
+                this.observer.handleResponse(response, Bundle.EMPTY);
+            } else {
+                final Bundle extra = new Bundle();
+                extra.putInt("code", -1);
+                this.observer.handleResponse(new JSONObject(), extra);
+            }
         }
     }
 

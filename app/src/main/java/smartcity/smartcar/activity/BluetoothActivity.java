@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.Snackbar;
@@ -69,13 +70,9 @@ public class BluetoothActivity extends MainActivity {
         checkBox = findViewById(R.id.checkBox);
         arcProgress = findViewById(R.id.arc_progress);
 
-        String deviceAddress = prefs.getString("myDeviceAddress", null);
-        if(deviceAddress != null){
-            if(Helper.getDeviceByAddress(deviceAddress) != null){
-                checkBox.setText(Helper.getDeviceByAddress(deviceAddress).getName());
-            } else {
-                modifyGUI(Event.BLUETOOTH_DISABLED, NO_PROB);
-            }
+        String deviceName = prefs.getString("myDeviceName", null);
+        if(deviceName != null){
+            checkBox.setText(deviceName);
         } else {
             checkBox.setText("Nessun device");
             arcProgress.setBottomText("Selezionare un device dalle impostazioni");
@@ -138,11 +135,6 @@ public class BluetoothActivity extends MainActivity {
                         modifyNoConnectionGUI();
                         break;
 
-                    case NO_DEVICES_PAIRED:
-                        arcProgress.setBottomText("Nessun device accoppiato");
-                        modifyNoConnectionGUI();
-                        break;
-
                     case DISCONNECT:
                         if(BluetoothAdapter.getDefaultAdapter().isEnabled()) {
                             arcProgress.setBottomText("Disconnesso");
@@ -152,13 +144,9 @@ public class BluetoothActivity extends MainActivity {
                         modifyNoConnectionGUI();
                         break;
 
-                    case DEVICE_NOT_FOUND:
-                        arcProgress.setBottomText("Connettersi a un device");
-                        modifyNoConnectionGUI();
-                        break;
-
                     case CAR_NOT_CLOSED:
-                        arcProgress.setBottomText("Non hai chiuso la macchina!");
+                        arcProgress.setBottomText("MACCHINA NON CHIUSA!!");
+                        arcProgress.setTextColor(Color.RED);
                         break;
 
                     case TRYING_TO_CONNECT:
@@ -188,7 +176,8 @@ public class BluetoothActivity extends MainActivity {
                     case CAR_CLOSED:
                         try {
                             arcProgress.setProgress(progress);
-                            arcProgress.setBottomText("Macchina chiusa");
+                            arcProgress.setBottomText("Macchina chiusa ;)");
+                            arcProgress.setTextColor(Color.GREEN);
                         } catch (Exception e) {e.printStackTrace();}
                         break;
 

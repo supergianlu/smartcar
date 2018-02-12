@@ -1,5 +1,6 @@
 package smartcity.smartcar.model;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -9,18 +10,34 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
+import smartcity.smartcar.UrlConnectionAsyncTask;
 import smartcity.smartcar.activity.BluetoothActivity;
 import smartcity.smartcar.R;
+import smartcity.smartcar.activity.SignupActivity;
 import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.model.Event.*;
+import static smartcity.smartcar.model.ParkingContent.ITEMS;
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 import static smartcity.smartcar.utility.Helper.NO_PROB;
 
@@ -71,7 +88,7 @@ public class ApplicationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
         deviceAddress = prefs.getString("myDeviceAddress", null);
-        if(deviceAddress == null) {
+        if (deviceAddress == null) {
             stopComputing();
             stopSelf();
             Toast.makeText(this, "Selezionare un device bluetooth dalle impostazioni", Toast.LENGTH_SHORT).show();
@@ -103,7 +120,7 @@ public class ApplicationService extends Service {
 
     public void startApplicationService(final String address) {
         // Se sono già connesso al dispositivo non interrompo la connessione
-        if(this.connectionHandlerThread != null && this.connectionHandlerThread.isConnectedWith(address)) {
+        if (this.connectionHandlerThread != null && this.connectionHandlerThread.isConnectedWith(address)) {
             Log.d("AndroidCar", "Già connesso al dispositivo");
         } else {
             this.stopComputing();
@@ -116,7 +133,7 @@ public class ApplicationService extends Service {
 
     public void stopComputing() {
         running = false;
-        if(this.connectionHandlerThread != null) {
+        if (this.connectionHandlerThread != null) {
             Log.d("AndroidCar", "Termino connectionHandler");
             this.connectionHandlerThread.stopComputing();
         }
@@ -125,29 +142,46 @@ public class ApplicationService extends Service {
     private void valutaChiusuraMacchina() {
         Log.d("AndroidCar", "Valuto chiusura macchina");
 
-        // Probabilità attuale minore di quella minima ---> lancio allarme
-        if(this.probability <= prefs.getInt("myProbability", DEFAULT_PROB)) {
+        final boolean closed = this.probability >= prefs.getInt("myProbability", DEFAULT_PROB);
+        if (closed) {
+            Log.d("AndroidCar", "Hai chiuso la macchina al " + this.probability + "%");
+            this.saveAndSendEvent(CAR_CLOSED, this.probability);
+        } else {
             Log.d("AndroidCar", "Non hai chiuso la macchina!");
             this.saveAndSendEvent(CAR_NOT_CLOSED, this.probability);
             this.sendNotification();
-
-        } else {
-            final long time = System.currentTimeMillis() - this.lastUpdateTime;
-
-            if(time < 15000) {
-                this.probability += 35;
-            } else if(time > 15000 && time < 30000){
-                this.probability += 25;
-            } else if(time > 30000 && time < 45000){
-                this.probability += 15;
-            } else {
-                this.probability += 5;
-            }
-
-            Log.d("AndroidCar", "Hai chiuso la macchina al " + this.probability + "%");
-            this.saveAndSendEvent(CAR_CLOSED, this.probability);
         }
-        //TODO in ognuno dei due casi salvo nel db il parcheggio
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            addParking(0, 0, closed);
+        }
+        LocationServices.getFusedLocationProviderClient(this).getLastLocation()
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            addParking(location.getLatitude(), location.getLongitude(), closed);
+                        } else {
+                            addParking(0, 0, closed);
+                        }
+                    }
+                });
+    }
+
+    private void addParking(double latitude, double longitude, boolean closed) {
+        final String username = prefs.getString("username", "");
+        try {
+            URL url = new URL(getString(R.string.add_parking));
+
+            final Bundle data = new Bundle();
+            data.putString("user", username);
+            data.putString("lat", ""+latitude);
+            data.putString("lon", ""+longitude);
+            data.putString("closed", closed ? "1" : "0");
+
+            new UrlConnectionAsyncTask(url, null, getApplicationContext()).execute(data);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
     }
 
     /* Per mandare un Intent implicito attraverso il LocalBroadcastManager in modo più semplice. */

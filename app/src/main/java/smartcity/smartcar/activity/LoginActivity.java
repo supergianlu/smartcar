@@ -32,12 +32,10 @@ import smartcity.smartcar.utility.Helper;
 
 public class LoginActivity extends AppCompatActivity implements UrlConnectionAsyncTask.UrlConnectionListener {
     private static final String TAG = "LoginActivity";
-    private static final int REQUEST_SIGNUP = 0;
 
     private EditText usernameText;
     private EditText passwordText;
     private Button loginButton;
-    private TextView signupLink;
     private String username;
     private String password;
 
@@ -48,7 +46,7 @@ public class LoginActivity extends AppCompatActivity implements UrlConnectionAsy
         usernameText = findViewById(R.id.input_username);
         passwordText = findViewById(R.id.input_password);
         loginButton = findViewById(R.id.btn_login);
-        signupLink = findViewById(R.id.link_signup);
+        final TextView signupLink = findViewById(R.id.link_signup);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +65,7 @@ public class LoginActivity extends AppCompatActivity implements UrlConnectionAsy
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
-                startActivityForResult(intent, REQUEST_SIGNUP);
+                startActivity(intent);
             }
         });
 

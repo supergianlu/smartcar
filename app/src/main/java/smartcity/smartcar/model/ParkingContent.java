@@ -47,7 +47,8 @@ public class ParkingContent implements UrlConnectionAsyncTask.UrlConnectionListe
                     final JSONArray parkingArray = response.getJSONObject("extra").getJSONArray("data");
                     for(int i = 0; i < parkingArray.length(); i++) {
                         JSONObject parking = parkingArray.getJSONObject(i);
-                        addItem(new ParkingItem(parking.getString("id"), parking.getDouble("lat"), parking.getDouble("lon"), parking.getString("closed"), parking.getString("date")));
+                        if(parking.getDouble("lon") != 0)
+                            addItem(new ParkingItem(parking.getString("id"), parking.getDouble("lat"), parking.getDouble("lon"), parking.getString("closed"), parking.getString("date")));
                     }
                 }
             } catch (JSONException e) {

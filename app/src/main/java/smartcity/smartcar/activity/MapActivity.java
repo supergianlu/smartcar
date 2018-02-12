@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -15,6 +16,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
@@ -47,11 +49,14 @@ import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import smartcity.smartcar.R;
+import smartcity.smartcar.UrlConnectionAsyncTask;
 import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
 import smartcity.smartcar.model.ApplicationService;
@@ -90,20 +95,21 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MapActivity.this,new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-            return;
+            ActivityCompat.requestPermissions(MapActivity.this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            recreate();
         }
-        if(!mMap.isMyLocationEnabled()) mMap.setMyLocationEnabled(true);
+        if (!mMap.isMyLocationEnabled()) mMap.setMyLocationEnabled(true);
 
         LocationServices.getFusedLocationProviderClient(this).getLastLocation()
-                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
                     @Override
                     public void onSuccess(Location location) {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                            if(ITEMS.get(0) != null) setAllOldParking();
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
                         }
+                        if (ITEMS.get(0) != null) setAllOldParking();
                     }
                 });
     }
@@ -121,18 +127,36 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         ParkingContent.ParkingItem lastParkingItem = ITEMS.get(0);
         carLocation = new LatLng(lastParkingItem.getLat(), lastParkingItem.getLon());
         mMap.addMarker(new MarkerOptions().position(carLocation)
-                .title("Hai parcheggiato la macchina qui alle "+lastParkingItem.getTime())
+                .title("Hai parcheggiato la macchina qui alle " + lastParkingItem.getTime())
                 .snippet("clicca per visualizzare il percorso")
                 .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
-            public void onInfoWindowClick(Marker marker) {
-                if(marker.getPosition().equals(carLocation)){
-                    Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
-                    marker.hideInfoWindow();
-                    setRoute(currentLocation, carLocation);
+            public void onInfoWindowClick(final Marker marker) {
+                if (ActivityCompat.checkSelfPermission(MapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MapActivity.this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                    return;
                 }
+                final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+                if (!manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+                    Toast.makeText(MapActivity.this, "Accendere il GPS", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                LocationServices.getFusedLocationProviderClient(MapActivity.this).getLastLocation()
+                        .addOnSuccessListener(new OnSuccessListener<Location>() {
+                            @Override
+                            public void onSuccess(Location location) {
+                                // Got last known location. In some rare situations this can be null.
+                                if (location != null) {
+                                    currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                                    if(marker.getPosition().equals(carLocation)){
+                                        Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
+                                        marker.hideInfoWindow();
+                                        setRoute(currentLocation, carLocation);
+                                    }
+                                }
+                            }
+                        });
             }
         });
 

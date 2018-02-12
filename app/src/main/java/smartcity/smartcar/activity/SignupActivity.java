@@ -35,12 +35,12 @@ public class SignupActivity extends AppCompatActivity implements UrlConnectionAs
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
-        nameText = (EditText) findViewById(R.id.input_name);
-        surnameText = (EditText) findViewById(R.id.input_surname);
-        usernameText = (EditText) findViewById(R.id.input_username);
-        passwordText = (EditText) findViewById(R.id.input_password);
-        signupButton = (Button) findViewById(R.id.btn_signup);
-        loginLink = (TextView) findViewById(R.id.link_login);
+        nameText = findViewById(R.id.input_name);
+        surnameText = findViewById(R.id.input_surname);
+        usernameText = findViewById(R.id.input_username);
+        passwordText = findViewById(R.id.input_password);
+        signupButton = findViewById(R.id.btn_signup);
+        loginLink = findViewById(R.id.link_login);
 
         signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
