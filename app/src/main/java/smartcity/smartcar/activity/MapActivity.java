@@ -55,7 +55,10 @@ import smartcity.smartcar.R;
 import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
 import smartcity.smartcar.model.ApplicationService;
+import smartcity.smartcar.model.ParkingContent;
 import smartcity.smartcar.utility.Helper;
+
+import static smartcity.smartcar.model.ParkingContent.ITEMS;
 
 public class MapActivity extends MainActivity implements OnMapReadyCallback {
 
@@ -99,24 +102,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                            carLocation = new LatLng(currentLocation.latitude, currentLocation.longitude+0.01);
-                            mMap.addMarker(new MarkerOptions().position(carLocation)
-                                    .title("Hai parcheggiato la macchina qui alle 17:00")
-                                    .snippet("clicca per visualizzare il percorso")
-                                    .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
-
-                            setAllOldParking();
-                            mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
-                                @Override
-                                public void onInfoWindowClick(Marker marker) {
-                                    if(marker.getPosition().equals(carLocation)){
-                                        Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
-                                        marker.hideInfoWindow();
-                                        setRoute(currentLocation, carLocation);
-                                    }
-                                }
-                            });
+                            if(ITEMS.get(0) != null) setAllOldParking();
                         }
                     }
                 });
@@ -132,37 +118,48 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
     }
 
     private void setAllOldParking() {
+        ParkingContent.ParkingItem lastParkingItem = ITEMS.get(0);
+        carLocation = new LatLng(lastParkingItem.getLat(), lastParkingItem.getLon());
+        mMap.addMarker(new MarkerOptions().position(carLocation)
+                .title("Hai parcheggiato la macchina qui alle "+lastParkingItem.getTime())
+                .snippet("clicca per visualizzare il percorso")
+                .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
+        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                if(marker.getPosition().equals(carLocation)){
+                    Toast.makeText(MapActivity.this, "Calcolo del percorso...", Toast.LENGTH_SHORT).show();
+                    marker.hideInfoWindow();
+                    setRoute(currentLocation, carLocation);
+                }
+            }
+        });
+
         ClusterManager<ClusterItem> clusterManager = new ClusterManager<>(this, mMap);
         mMap.setOnCameraIdleListener(clusterManager);
         mMap.setOnMarkerClickListener(clusterManager);
-
-        //TODO get all parking from DB (in AsyncTask)
-        double lat = 44.063900;
-        double lng = 12.585375;
-        // Add ten cluster items in close proximity, for purposes of this example.
-        for (int i = 0; i < 10; i++) {
-            double offset = i / 60d;
-            lat = lat - offset;
-            lng = lng - offset;
+        for(ParkingContent.ParkingItem parkingItem : ITEMS.subList(1, ITEMS.size())){
             String street;
             Geocoder geocoder = new Geocoder(MapActivity.this, Locale.getDefault());
             try {
-                List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
+                List<Address> addresses = geocoder.getFromLocation(parkingItem.getLat(), parkingItem.getLon(), 1);
 
                 if (!addresses.isEmpty()) {
                     Address returnedAddress = addresses.get(0);
                     street = returnedAddress.getAddressLine(0);
                 }
                 else {
-                    street =  "\""+lat+"\",\""+lng+"\"";
+                    street =  "\""+parkingItem.getLat()+"\",\""+parkingItem.getLon()+"\"";
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-                street =  "\""+lat+"\",\""+lng+"\"";
+                street =  "\""+parkingItem.getLat()+"\",\""+parkingItem.getLon()+"\"";
             }
-            MyClusterItem offsetItem = new MyClusterItem(lat, lng, "Hai parcheggiato qui il 02/02/95", street);
+            MyClusterItem offsetItem = new MyClusterItem(parkingItem.getLat(), parkingItem.getLon(), "Hai parcheggiato qui il "+parkingItem.getDate()+" alle "+parkingItem.getTime(), street);
             clusterManager.addItem(offsetItem);
         }
+
         clusterManager.setOnClusterClickListener(new ClusterManager.OnClusterClickListener<ClusterItem>() {
             @Override
             public boolean onClusterClick(Cluster<ClusterItem> cluster) {

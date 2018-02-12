@@ -20,17 +20,7 @@ public class Helper {
 
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     public static final int DEFAULT_PROB = 40;
-    public static final int NO_PROB = -1;
-
-    public static boolean isMyServiceRunning(Context context, Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    public static final int NO_PROB = 0;
 
     /**
      * Legge da uno stream di dati una stringa. La funzione riconosce come terminatore il carattere '\n',

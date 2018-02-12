@@ -16,15 +16,17 @@ import smartcity.smartcar.R;
 import smartcity.smartcar.UrlConnectionAsyncTask;
 import smartcity.smartcar.Utente;
 import smartcity.smartcar.UtenteImpl;
+import smartcity.smartcar.model.ParkingContent;
 
 public class LoadingActivity extends Activity implements UrlConnectionAsyncTask.UrlConnectionListener {
+    private String username;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_loading);
         final SharedPreferences prefs = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE);
-        final String username = prefs.getString("username", null);
+        username = prefs.getString("username", null);
         final String password = prefs.getString("password", null);
         if(username != null && password != null){
             checkLogin(username, password);
@@ -50,6 +52,7 @@ public class LoadingActivity extends Activity implements UrlConnectionAsyncTask.
             try {
                 final int code = response.getInt("code");
                 if(code == LOGIN_SUCCESS) {
+                    new ParkingContent(getApplicationContext(), username);
                     final Utente utente = new UtenteImpl(response.getJSONObject("extra").getJSONObject("utente"));
                     AccountManager.saveUser(utente, getApplicationContext());
                     startActivity(new Intent(this, MapActivity.class));

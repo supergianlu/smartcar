@@ -26,6 +26,7 @@ import smartcity.smartcar.R;
 import smartcity.smartcar.UrlConnectionAsyncTask;
 import smartcity.smartcar.Utente;
 import smartcity.smartcar.UtenteImpl;
+import smartcity.smartcar.model.ParkingContent;
 import smartcity.smartcar.utility.Helper;
 
 
@@ -118,6 +119,7 @@ public class LoginActivity extends AppCompatActivity implements UrlConnectionAsy
             try {
                 final int code = response.getInt("code");
                 if(code == LOGIN_SUCCESS) {
+                    new ParkingContent(getApplicationContext(), username);
                     final Utente utente = new UtenteImpl(response.getJSONObject("extra").getJSONObject("utente"));
                     AccountManager.saveUser(utente, getApplicationContext());
                     SharedPreferences.Editor editor = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE).edit();

@@ -134,7 +134,6 @@ public class BluetoothActivity extends MainActivity {
             public void run() {
                 switch (event) {
                     case BLUETOOTH_DISABLED:
-                        checkBox.setText("Nessun device");
                         arcProgress.setBottomText("Bluetooth disabilitato");
                         modifyNoConnectionGUI();
                         break;
@@ -171,7 +170,7 @@ public class BluetoothActivity extends MainActivity {
                         break;
 
                     case CONNECTION_ESTABLISHED:
-                        arcProgress.setBottomText("Connessione stabilita");
+                        arcProgress.setBottomText("Connesso");
                         progressBar.setVisibility(View.INVISIBLE);
                         checkBox.setChecked(true);
                         disconnectButton.setEnabled(true);
