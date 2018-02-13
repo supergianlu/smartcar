@@ -42,7 +42,9 @@ public class MainActivity extends AppCompatActivity
             intent = new Intent(this, MapActivity.class);
         } else if (id == R.id.nav_bluetooth) {
             intent = new Intent(this, BluetoothActivity.class);
-        } else if (id == R.id.nav_setting) {
+        } else if (id == R.id.nav_chart) {
+            intent = new Intent(this, ChartActivity.class);
+        }else if (id == R.id.nav_setting) {
             intent = new Intent(this, SettingActivity.class);
         } else if (id == R.id.nav_logout) {
             if(service.isRunning()){
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
         Intent intent= new Intent(this, ApplicationService.class);
         bindService(intent, this, Context.BIND_AUTO_CREATE);
     }

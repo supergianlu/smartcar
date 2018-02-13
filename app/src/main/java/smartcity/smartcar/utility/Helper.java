@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class Helper {
-
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     public static final int DEFAULT_PROB = 40;
     public static final int NO_PROB = 0;

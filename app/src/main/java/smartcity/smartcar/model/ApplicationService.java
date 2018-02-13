@@ -63,8 +63,6 @@ public class ApplicationService extends Service {
 
 
     private ConnectionHandlerThread connectionHandlerThread;
-    private long lastUpdateTime; //TODO così utile sta roba del tempo?
-
     private final IBinder mBinder = new MyBinder();
     private SharedPreferences prefs;
     private String deviceAddress;
@@ -101,12 +99,6 @@ public class ApplicationService extends Service {
     public void saveAndSendEvent(Event event, int probability) {
         this.event = event;
         switch (event) {
-            case MESSAGE_RECEIVED:
-                this.probability = probability;
-                this.lastUpdateTime = System.currentTimeMillis();
-                this.sendBroadcast(event, probability);
-                break;
-
             case DISCONNECTED:
                 this.valutaChiusuraMacchina();
                 break;
@@ -141,16 +133,18 @@ public class ApplicationService extends Service {
 
     private void valutaChiusuraMacchina() {
         Log.d("AndroidCar", "Valuto chiusura macchina");
-
         final boolean closed = this.probability >= prefs.getInt("myProbability", DEFAULT_PROB);
+        String notificationString;
         if (closed) {
             Log.d("AndroidCar", "Hai chiuso la macchina al " + this.probability + "%");
+            notificationString = "Hai chiuso la macchina al " + this.probability + "%";
             this.saveAndSendEvent(CAR_CLOSED, this.probability);
         } else {
             Log.d("AndroidCar", "Non hai chiuso la macchina!");
+            notificationString = "Non hai chiuso la macchina!";
             this.saveAndSendEvent(CAR_NOT_CLOSED, this.probability);
-            this.sendNotification();
         }
+        this.sendNotification(notificationString);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             addParking(0, 0, closed);
         }
@@ -191,9 +185,7 @@ public class ApplicationService extends Service {
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
 
-    private void sendNotification() {
-        final Intent i = new Intent(this, BluetoothActivity.class);
-        final PendingIntent pi = PendingIntent.getActivity(this, 1, i, 0);
+    private void sendNotification(final String contentText) {
         Notification.Builder builder;
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -203,27 +195,29 @@ public class ApplicationService extends Service {
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
             builder = new Notification.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_stat_name)
                     .setContentTitle("Smart Car")
-                    .setContentText("Non hai chiuso la macchina!")
+                    .setContentText(contentText)
                     .setAutoCancel(true)
-                    .setContentIntent(pi)
                     .setChannelId(CHANNEL_ID);
             notificationManager.createNotificationChannel(mChannel);
             notificationManager.notify(notifyID, builder.build());
         } else {
             builder = new Notification.Builder(this)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_stat_name)
                     .setContentTitle("Smart Car")
-                    .setContentText("Non hai chiuso la macchina!")
-                    .setAutoCancel(true)
-                    .setContentIntent(pi);
+                    .setContentText(contentText)
+                    .setAutoCancel(true);
             notificationManager.notify(1, builder.build());
         }
     }
 
     public Event getEvent() {
         return event;
+    }
+
+    public int getProbability() {
+        return probability;
     }
 
     @Override

@@ -72,7 +72,7 @@ public final class ConnectionHandlerThread extends Thread {
             // Se il bluetooth è disattivato interrompo il thread e lo notifico al service
             if(!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
                 Log.d("AndroidCar", "Bluetooth disattivato mentre tentavo di connettermi");
-                service.saveAndSendEvent(Event.BLUETOOTH_DISABLED, NO_PROB);
+                service.saveAndSendEvent(Event.DISCONNECT, NO_PROB);
                 this.stopComputing();
                 return false;
             }
@@ -104,15 +104,16 @@ public final class ConnectionHandlerThread extends Thread {
                 Log.d("AndroidCar", "Ricevuto: " + receive);
                 service.saveAndSendEvent(Event.MESSAGE_RECEIVED, Integer.parseInt(receive));
                 sleep(100);
+            } catch (NumberFormatException | InterruptedException e){
+                e.printStackTrace();
             } catch (IOException | IllegalStateException e) {
                 this.closeConnection();
 
                 if(!this.stop){
                     service.saveAndSendEvent(Event.DISCONNECTED, NO_PROB);
                 }
-
                 stopHandlingConnection = true;
-            } catch (InterruptedException e1) { e1.printStackTrace(); }
+            }
         }
     }
 

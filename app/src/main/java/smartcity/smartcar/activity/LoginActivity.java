@@ -55,7 +55,6 @@ public class LoginActivity extends AppCompatActivity implements UrlConnectionAsy
                         getSystemService(Context.INPUT_METHOD_SERVICE);
                 inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
                         InputMethodManager.HIDE_NOT_ALWAYS);
-                Toast.makeText(LoginActivity.this, "Login...", Toast.LENGTH_SHORT).show();
                 login();
                 loginButton.setEnabled(false);
             }
@@ -117,7 +116,7 @@ public class LoginActivity extends AppCompatActivity implements UrlConnectionAsy
             try {
                 final int code = response.getInt("code");
                 if(code == LOGIN_SUCCESS) {
-                    new ParkingContent(getApplicationContext(), username);
+                    Toast.makeText(LoginActivity.this, "Login...", Toast.LENGTH_SHORT).show();
                     final Utente utente = new UtenteImpl(response.getJSONObject("extra").getJSONObject("utente"));
                     AccountManager.saveUser(utente, getApplicationContext());
                     SharedPreferences.Editor editor = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE).edit();

@@ -2,12 +2,9 @@ package smartcity.smartcar.activity;
 
 
 import android.Manifest;
-import android.app.ActivityManager;
-import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -20,9 +17,9 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.akexorcist.googledirection.DirectionCallback;
@@ -48,6 +45,10 @@ import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -61,21 +62,22 @@ import smartcity.smartcar.cluster.MyClusterItem;
 import smartcity.smartcar.cluster.ParkingDialogActivity;
 import smartcity.smartcar.model.ApplicationService;
 import smartcity.smartcar.model.ParkingContent;
-import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.model.ParkingContent.ITEMS;
 
-public class MapActivity extends MainActivity implements OnMapReadyCallback {
+public class MapActivity extends MainActivity implements OnMapReadyCallback, UrlConnectionAsyncTask.UrlConnectionListener {
 
     private GoogleMap mMap;
     private LatLng currentLocation;
     private LatLng carLocation;
+    private String username;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         setUpMainActivity();
+        username = getSharedPreferences("MY_PREFS_NAME", MODE_PRIVATE).getString("username", "");
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -109,9 +111,17 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15), 1000, null);
                         }
-                        if (ITEMS.get(0) != null) setAllOldParking();
                     }
                 });
+
+        try {
+            Bundle data = new Bundle();
+            data.putString("username", username);
+            System.out.println(username);
+            new UrlConnectionAsyncTask(new URL(getString(R.string.get_parking)), this, getApplicationContext()).execute(data);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
     }
 
     private BitmapDescriptor getMarkerIconFromDrawable(Drawable drawable) {
@@ -126,10 +136,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
     private void setAllOldParking() {
         ParkingContent.ParkingItem lastParkingItem = ITEMS.get(0);
         carLocation = new LatLng(lastParkingItem.getLat(), lastParkingItem.getLon());
-        mMap.addMarker(new MarkerOptions().position(carLocation)
-                .title("Hai parcheggiato la macchina qui alle " + lastParkingItem.getTime())
-                .snippet("clicca per visualizzare il percorso")
-                .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
+
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(final Marker marker) {
@@ -182,6 +189,11 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
             }
             MyClusterItem offsetItem = new MyClusterItem(parkingItem.getLat(), parkingItem.getLon(), "Hai parcheggiato qui il "+parkingItem.getDate()+" alle "+parkingItem.getTime(), street);
             clusterManager.addItem(offsetItem);
+
+            mMap.addMarker(new MarkerOptions().position(carLocation)
+                    .title("Hai parcheggiato la macchina qui alle " + lastParkingItem.getTime())
+                    .snippet("clicca per visualizzare il percorso")
+                    .icon(getMarkerIconFromDrawable(getResources().getDrawable(R.drawable.ic_directions_car))));
         }
 
         clusterManager.setOnClusterClickListener(new ClusterManager.OnClusterClickListener<ClusterItem>() {
@@ -238,4 +250,26 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback {
         }
     }
 
+    @Override
+    public void handleResponse(JSONObject response, Bundle extra) {
+        if(response.length() != 0) {
+            try {
+                final int code = response.getInt("code");
+                if(code == 2) {
+                    ITEMS.clear();
+                    final JSONArray parkingArray = response.getJSONObject("extra").getJSONArray("data");
+                    for(int i = 0; i < parkingArray.length(); i++) {
+                        JSONObject parking = parkingArray.getJSONObject(i);
+                        if(parking.getDouble("lon") != 0) {
+                            ParkingContent.addItem(new ParkingContent.ParkingItem(parking.getString("id"), parking.getDouble("lat"), parking.getDouble("lon"), parking.getString("closed"), parking.getString("date")));
+                        }
+                    }
+                }
+                if (ITEMS.get(0) != null) setAllOldParking();
+            } catch (JSONException e) {
+                Toast.makeText(getApplicationContext(), "Qualcosa è andato storto nell'ottenere i parcheggi dal DB", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
+        }
+    }
 }

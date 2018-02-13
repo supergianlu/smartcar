@@ -52,7 +52,6 @@ public class LoadingActivity extends Activity implements UrlConnectionAsyncTask.
             try {
                 final int code = response.getInt("code");
                 if(code == LOGIN_SUCCESS) {
-                    new ParkingContent(getApplicationContext(), username);
                     final Utente utente = new UtenteImpl(response.getJSONObject("extra").getJSONObject("utente"));
                     AccountManager.saveUser(utente, getApplicationContext());
                     startActivity(new Intent(this, MapActivity.class));

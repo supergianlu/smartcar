@@ -40,6 +40,11 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:screenOrientation="portrait"/>
         <activity
+            android:name="smartcity.smartcar.activity.ChartActivity"
+            android:label="Diagramma"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:screenOrientation="portrait"/>
+        <activity
             android:name="smartcity.smartcar.activity.SettingActivity"
             android:label="Impostazioni"
             android:theme="@style/AppTheme.NoActionBar"

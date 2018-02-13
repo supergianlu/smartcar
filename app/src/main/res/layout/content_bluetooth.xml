@@ -16,7 +16,6 @@
         android:layout_gravity="center"
         android:layout_marginTop="50dp"
         app:arc_unfinished_color="#EEEEEE"
-        app:arc_finished_color="@color/colorPrimary"
         app:arc_text_size="35dp"
         app:arc_bottom_text_size="14dp"
         app:arc_stroke_width="12dp" />
