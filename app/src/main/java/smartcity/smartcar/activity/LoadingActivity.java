@@ -18,6 +18,11 @@ import smartcity.smartcar.Utente;
 import smartcity.smartcar.UtenteImpl;
 import smartcity.smartcar.model.ParkingContent;
 
+/**
+ * Activity avviata all'apertura dell'applicazione. Permette di effettuare il login in automatico
+ * se sono presenti dei dati salvati nelle SharedPreferences. Se il login avviene con successo allora
+ * viene mostrata la MapActivity, in caso contrario viene mostrata la LoginActivity.
+ */
 public class LoadingActivity extends Activity implements UrlConnectionAsyncTask.UrlConnectionListener {
     private String username;
 

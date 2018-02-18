@@ -3,7 +3,9 @@ package smartcity.smartcar.cluster;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.clustering.ClusterItem;
 
-
+/**
+ * Cluster Item che rappresenta un parcheggio effettuato dall'utente
+ */
 public class MyClusterItem implements ClusterItem {
     private LatLng position;
     private String title;

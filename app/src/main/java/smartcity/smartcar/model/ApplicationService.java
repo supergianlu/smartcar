@@ -44,20 +44,11 @@ import static smartcity.smartcar.utility.Helper.NO_PROB;
 
 /**
  * Service che implementa la logica dell'applicazione.
- * Una volta avviato continua a lavorare in background finchè l'applicazione non viene chiusa.
- * Come ogni service viene attivato con un Intent esplicito, nell'Intent può essere inserito un indirizzo fisico di un device
- * attraverso il metodo Intent.putStringExtra("address", stringaIndirizzo). Il Service si connetterà quindi a quell'indirizzo
- * Inoltre resta in ascolto di tre Intent attraverso un LocalBroadcastReceiver:
- *
- * - SET_DEVICE, permette connettersi ad un altro dispositivo. Nell'Intent va inserito l'indirizzo del dispositivo usando il metodo
- * Intent.putStringExtra("address", stringaIndirizzo)
- *
- * - CLOSE_CONNECTION, chiude la connessione bluetooth e interrompe l'applicazione.
- *
- * - STOP_SERVICE, interrompe la computazione, chiude la connessione e termina il service.
- *
- * N.B : Questi Intent devono essere mandati usando il metodo LocalBroadcastManager.sendBroadcast(intent) in quanto
- *       questo Service utilizza un receiver locale
+ * Una volta avviato continua a lavorare in background finchè non viene disattivato.
+ * Contiene un campo ConnectionHandlerThread che rappresenta il thread che gestisce
+ * il collegamento con Arduino.
+ * Permette di mostrare una notifica che avvisa l'utente sullo stato di
+ * chiusura o apertura della macchina
  */
 public class ApplicationService extends Service {
 

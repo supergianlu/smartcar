@@ -16,15 +16,10 @@ import static smartcity.smartcar.utility.Helper.NO_PROB;
  * Thread che gestisce la connessione bluetooth con il device, scambia/invia i messaggi.
  * Non termina finchè non viene invocato il metodo stopComputing().
  * Questo thread può trovarsi in 3 stati consecutivi :
- *
  * - Tentativo di connessione: continua finchè non riesce a connettersi
  * - Gestione comunicazione: invia/riceve dati con il dispositivo a cui è connesso.
  *                           Esce da questo stato quando la connessione viene persa
- *
  * - Connessione persa: In questa fase aspetta 10 secondi prima di passare allo stato 1
- *
- *
- *
  */
 public final class ConnectionHandlerThread extends Thread {
 

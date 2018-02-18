@@ -17,7 +17,10 @@ import java.util.Collection;
 
 import smartcity.smartcar.R;
 
-
+/**
+ * Dialog che mostra tutti i dati relativi a un insieme di parcheggi.
+ * Viene mostrata premento su un Cluster Manager.
+ */
 public class ParkingDialogActivity extends Activity {
 
     @Override

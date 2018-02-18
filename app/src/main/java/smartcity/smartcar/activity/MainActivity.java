@@ -18,6 +18,11 @@ import android.view.MenuItem;
 import smartcity.smartcar.R;
 import smartcity.smartcar.model.ApplicationService;
 
+/**
+ * Activity estesa dalle principali activity dell'applicazione, quali MapActivity, BluetoothActivity, ChartActivity e
+ * SettingActivity. Questa classe contiene un capo di tipo ApplicationService e principalmente viene utilizzata
+ * per non effettuare ripetizioni di codice nelle altre activity
+ */
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
 

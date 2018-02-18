@@ -16,6 +16,10 @@ import smartcity.smartcar.model.ParkingContent;
 
 import static smartcity.smartcar.model.ParkingContent.ITEMS;
 
+/**
+ * Questa Activity contiene un grafico a torta che mostra le percentuali e il numero effettivo di parcheggi
+ * in cui l'utente si è allontanato dalla macchina dimenticandola aperta o lasciandola correttamente chiusa
+ */
 public class ChartActivity extends MainActivity {
 
     @Override

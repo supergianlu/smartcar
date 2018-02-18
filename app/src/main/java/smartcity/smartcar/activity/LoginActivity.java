@@ -29,7 +29,10 @@ import smartcity.smartcar.UtenteImpl;
 import smartcity.smartcar.model.ParkingContent;
 import smartcity.smartcar.utility.Helper;
 
-
+/**
+ * Questa activity permette agli utenti dell'applicazione
+ * di effettuare il login e quindi entrare nelle schermate principali dell'app
+ */
 public class LoginActivity extends AppCompatActivity implements UrlConnectionAsyncTask.UrlConnectionListener {
     private static final String TAG = "LoginActivity";
 

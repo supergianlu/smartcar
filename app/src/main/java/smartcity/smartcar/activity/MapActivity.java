@@ -65,6 +65,13 @@ import smartcity.smartcar.model.ParkingContent;
 
 import static smartcity.smartcar.model.ParkingContent.ITEMS;
 
+/**
+ * Questa activity consente di mostrare una Google Maps inizialmente centrata sulla posizione dell'utente in quel momento.
+ * Nel caso che questo abbia dei parcheggi salvati nel database dell'applicazione, allora essi verranno mostrati sotto
+ * forma di marker sulla mappa. Cliccando su ognuno di essi sarà possibile visualizzarne i dati.
+ * L'ultimo parcheggio verrà mostrato con un'immagine differente e, solo per questo parcheggio,
+ * sarà possibile visualizzare il percorso per raggiungere l'autovettura.
+ */
 public class MapActivity extends MainActivity implements OnMapReadyCallback, UrlConnectionAsyncTask.UrlConnectionListener {
 
     private GoogleMap mMap;
@@ -133,6 +140,9 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback, Url
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
+    /**
+     * Questo metodo consente di mostrare sulla mappa tutti i marker relativi ai parcheggi salvati sul database
+     */
     private void setAllOldParking() {
         ParkingContent.ParkingItem lastParkingItem = ITEMS.get(0);
         carLocation = new LatLng(lastParkingItem.getLat(), lastParkingItem.getLon());
@@ -265,7 +275,7 @@ public class MapActivity extends MainActivity implements OnMapReadyCallback, Url
                         }
                     }
                 }
-                if (ITEMS.get(0) != null) setAllOldParking();
+                if (!ITEMS.isEmpty() && ITEMS.get(0) != null) setAllOldParking();
             } catch (JSONException e) {
                 Toast.makeText(getApplicationContext(), "Qualcosa è andato storto nell'ottenere i parcheggi dal DB", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();

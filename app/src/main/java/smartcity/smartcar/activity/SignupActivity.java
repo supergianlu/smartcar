@@ -19,7 +19,10 @@ import java.net.URL;
 import smartcity.smartcar.R;
 import smartcity.smartcar.UrlConnectionAsyncTask;
 
-
+/**
+ * Questa activity permette a qualsiasi utente di effettuare
+ * una registrazione al database dell'applicazione
+ */
 public class SignupActivity extends AppCompatActivity implements UrlConnectionAsyncTask.UrlConnectionListener {
     private static final String TAG = "SignupActivity";
 

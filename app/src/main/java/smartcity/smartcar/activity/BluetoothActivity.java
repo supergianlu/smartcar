@@ -27,7 +27,11 @@ import smartcity.smartcar.model.Event;
 
 import static smartcity.smartcar.utility.Helper.NO_PROB;
 
-
+/**
+ * Activity che permette di avviare e/o disattivare l'ApplicationService.
+ * Qui viene mostrato lo stato di collegamento con Arduino e la percentuale momentanea di
+ * chiusura/apertura della macchina
+ */
 public class BluetoothActivity extends MainActivity {
 
     private ProgressBar progressBar;

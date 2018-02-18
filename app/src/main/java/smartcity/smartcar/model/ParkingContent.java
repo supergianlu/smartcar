@@ -3,6 +3,10 @@ package smartcity.smartcar.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe che rappresenta i parcheggi.
+ * Contiene un valore statico ITEMS, ovvero una lista di tutti i parcheggi effettauti
+ */
 public class ParkingContent {
     public static final List<ParkingItem> ITEMS = new ArrayList<>();
 

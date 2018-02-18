@@ -24,6 +24,10 @@ import smartcity.smartcar.utility.Helper;
 
 import static smartcity.smartcar.utility.Helper.DEFAULT_PROB;
 
+/**
+ * In questa activity è possibile impostare il valore che indica la probabilità minima di chiusura
+ * della macchina e il nome e l'indirizzo del device Bluetooth di default al quale connettersi
+ */
 public class SettingActivity extends MainActivity implements ServiceConnection{
 
     private TextView text;
